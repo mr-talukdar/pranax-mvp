@@ -1,0 +1,32 @@
+name: Engineering task
+description: A scoped implementation or repository task
+title: "[Task]: "
+labels: []
+body:
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objective
+      description: State the desired outcome.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: List owned files/directories and exclusions.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: List measurable completion criteria.
+    validations:
+      required: true
+  - type: textarea
+    id: testing
+    attributes:
+      label: Testing requirements
+    validations:
+      required: false
