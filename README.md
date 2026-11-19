@@ -4,7 +4,7 @@ PranaX is a multi-tenant SaaS foundation for Pilates, yoga, and boutique fitness
 
 ## Repository status
 
-The repository contains the initial application, database, and synthetic-data foundations. Product workflows remain intentionally minimal: the web app exposes a health-oriented shell and server-side studio-scoped member endpoints behind a development demo context, while the intelligence service exposes a health endpoint.
+The repository contains the initial application, database, synthetic-data foundations, and a deterministic retention assessment engine. Product workflows remain intentionally minimal: the web app exposes a health-oriented shell and server-side studio-scoped member endpoints behind a development demo context, plus a tenant-authorized member retention assessment route. The intelligence service exposes its health endpoint and an authenticated retention assessment endpoint.
 
 ## Planned structure
 
