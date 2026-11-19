@@ -6,10 +6,12 @@ PranaX is intended to operate as a multi-tenant SaaS platform. The final tenancy
 
 Every server-side operation over tenant-owned data must establish a trusted tenant scope and enforce it independent of client-provided UI state.
 
+The initial database migration enables PostgreSQL RLS. Policies derive access from `auth.uid()` through `StudioUser` membership; the API must still establish a trusted studio context for every Prisma transaction. The database package provides a transaction-scoped `app.studio_id` setting as defense in depth, while Supabase Auth propagation and production role configuration remain required before production tenant access.
+
 ## Decisions pending
 
 - tenant identifier source and propagation;
-- Supabase/PostgreSQL isolation pattern;
+- Supabase/PostgreSQL role and connection-pool isolation details;
 - authorization model and role hierarchy;
 - management of cross-tenant operations;
 - retention, export, and deletion behavior;

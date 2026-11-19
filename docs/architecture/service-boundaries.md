@@ -4,9 +4,9 @@
 
 Owns presentation, accessibility, browser state, routing, and typed integration with backend contracts. It must not contain service credentials or serve as an authorization boundary.
 
-## Backend API
+## Web server boundary
 
-Owns primary studio business workflows, authentication, authorization, tenant enforcement, validation, and data access. It defines HTTP behavior consumed by the frontend and may call the intelligence service through an explicit integration.
+Next.js Route Handlers and server-only modules own primary studio business workflows, authentication context, authorization, tenant enforcement, validation, and data access. They define HTTP behavior consumed by the frontend and may call the intelligence service through an explicit integration. Server-only credentials and database clients must never enter browser bundles.
 
 ## Intelligence service
 

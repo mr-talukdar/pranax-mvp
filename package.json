@@ -9,7 +9,28 @@
   "scripts": {
     "build": "pnpm -r --if-present build",
     "typecheck": "pnpm -r --if-present typecheck",
-    "lint": "pnpm -r --if-present lint",
-    "test": "pnpm -r --if-present test"
+    "lint": "eslint .",
+    "test": "pnpm -r --if-present test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:generate": "pnpm --filter @pranax/database generate",
+    "db:validate": "pnpm --filter @pranax/database validate",
+    "db:migrate:check": "pnpm --filter @pranax/database migrate:check",
+    "db:migrate:deploy": "pnpm --filter @pranax/database migrate:deploy",
+    "db:migrate:status": "pnpm --filter @pranax/database migrate:status",
+    "db:migrate:dev": "pnpm --filter @pranax/database migrate:dev",
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop",
+    "supabase:status": "supabase status",
+    "synthetic:generate": "PYTHONPATH=tools/synthetic-data/src python3 -m synthetic_data.cli --output datasets/synthetic-data-v1.2.0.json",
+    "synthetic:test": ".venv/bin/pytest tools/synthetic-data/tests -q"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.35.0",
+    "@typescript-eslint/eslint-plugin": "8.42.0",
+    "@typescript-eslint/parser": "8.42.0",
+    "eslint": "9.35.0",
+    "prettier": "3.6.2",
+    "supabase": "^3.2.0"
   }
 }

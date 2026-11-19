@@ -15,7 +15,7 @@ Read:
 - [service boundaries](../../../docs/architecture/service-boundaries.md)
 - [multi-tenancy guidance](../../../docs/architecture/multi-tenancy.md)
 - [monorepo structure](../../../docs/architecture/monorepo-structure.md)
-- [API ownership instructions](../../../services/api/AGENTS.md)
+- [Repository instructions](../../../AGENTS.md)
 - [repository instructions](../../../AGENTS.md)
 - [schema conventions and domain rules](references/schema-conventions.md)
 
@@ -32,6 +32,11 @@ Resolve any TBD architecture choice through an approved decision before implemen
 - Exposed tenant-owned tables require approved row-level security policies. Do not invent a tenancy propagation or RLS pattern while the repository decision remains TBD.
 - Keep service-role credentials out of frontend code, use least privilege, preserve historical records intentionally, and never bypass isolation for development or seeding.
 - Surface migration, validation, and test failures. Do not claim a migration or test succeeded without executing it.
+- Supabase Auth is the runtime identity authority. `StudioUser` membership is the studio authorization authority.
+- The normal application database role must use RLS; a studio ID or `app.studio_id` setting never grants access.
+- Keep Prisma transaction identity and studio context transaction-local. Do not use process-global mutable state.
+- Use composite tenant-aware foreign keys for cross-tenant-sensitive renewals, pauses, batches, attendance, snapshots, and predictions.
+- Retention snapshots are append-only; cancellation and effective dates must be represented independently of original end dates.
 
 ## Frozen domain rules
 

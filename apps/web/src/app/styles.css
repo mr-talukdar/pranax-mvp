@@ -1,0 +1,23 @@
+:root {
+  color-scheme: light;
+  font-family: system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: #f7f7f5;
+  color: #1d2925;
+}
+
+main {
+  max-width: 760px;
+  margin: 15vh auto;
+  padding: 2rem;
+}
+
+.eyebrow {
+  color: #5f806e;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}

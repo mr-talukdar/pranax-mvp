@@ -5,15 +5,16 @@ PranaX is planned as a multi-tenant SaaS platform for boutique fitness studios.
 ## Planned components
 
 - **Web application:** Next.js and TypeScript, deployed to a Vercel-compatible frontend project.
-- **Backend API:** Node.js and Express with TypeScript, deployed to Google Cloud Run-compatible infrastructure.
+- **Application server boundary:** Next.js Route Handlers and server-only TypeScript modules in `apps/web`, deployed with the web application.
 - **Intelligence service:** Python and FastAPI for analytics, retention scoring, and AI-assisted insights.
 - **Shared contracts:** TypeScript API contracts and schemas consumed across TypeScript boundaries.
-- **Data platform:** Supabase PostgreSQL with Prisma as the intended ORM. These choices are constraints pending implementation validation.
+- **Data platform:** Supabase PostgreSQL with Prisma. The initial Prisma schema and migration live in `packages/database`; remote Supabase configuration remains environment-dependent.
+- **Synthetic data:** A standalone Python factory under `tools/synthetic-data` exports versioned artifacts. The TypeScript seed loader is the only database-facing loader for those artifacts.
 
 ## Data flow
 
-Browser clients communicate with the web application and backend APIs. The backend owns primary application authorization and data access. The intelligence service receives explicitly authorized data or requests for analytics and AI operations. External AI and provider integrations remain outside application data boundaries unless individually documented.
+Browser clients communicate with the Next.js web application. Server-only modules own the application authorization context and primary data access for the current foundation. The intelligence service receives explicitly authorized data or requests for analytics and AI operations. Synthetic artifacts flow through the database package seed loader before operational storage. External AI and provider integrations remain outside application data boundaries unless individually documented.
 
 ## Deployment status
 
-No application is scaffolded and no deployment configuration is active. Deployment remains TBD.
+The initial applications and service skeletons are scaffolded, but deployment configuration and Supabase credentials remain TBD.

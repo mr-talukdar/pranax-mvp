@@ -39,6 +39,12 @@ Generate and test studio, members, plans, membership periods, renewals, pauses/r
 - Validate referential integrity, tenant ownership, identity uniqueness, chronology, non-overlap, attendance uniqueness, timezone consistency, lifecycle consistency, schema compatibility, and scenario expectations.
 - Fail with useful validation errors; never silently repair contradictory records.
 - For ML demonstrations, prevent future leakage, use only prediction-time features, exclude archetype labels, split chronologically, label synthetic data explicitly, and never claim real-world model performance from synthetic metrics.
+- Generate actual IANA timezone timestamps and derive `localDate` from the studio timezone.
+- Test DST boundaries for DST-observing studios and midnight boundaries for `Asia/Kolkata`.
+- Attendance is valid for active, paused, expired, and cancelled members; do not reject it merely because it falls outside a membership period.
+- Include ACTIVE, PAUSED, EXPIRED, CANCELLED, renewal, non-renewal, grace, churn, and reactivation evidence.
+- Keep scenario data as real entities and relationships, not metadata-only fixtures.
+- Never generate placeholder retention scores or placeholder churn probabilities unless explicitly marked as excluded demonstration data.
 
 ## Workflow
 

@@ -1,0 +1,238 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum StudioUserRole {
+  OWNER
+  MANAGER
+}
+
+enum MembershipStatus {
+  ACTIVE
+  PAUSED
+  EXPIRED
+  CANCELLED
+}
+
+enum AttendanceSource {
+  MANUAL
+  CSV
+}
+
+enum RetentionSnapshotType {
+  DAILY
+  SIGNIFICANT_EVENT
+}
+
+model Studio {
+  id                 String                  @id @default(uuid()) @db.Uuid
+  name               String
+  timezone           String                  @default("UTC")
+  isSynthetic        Boolean                 @default(false)
+  createdAt          DateTime                @default(now()) @db.Timestamptz(6)
+  updatedAt          DateTime                @updatedAt @db.Timestamptz(6)
+  users              StudioUser[]
+  settings           StudioSettings?
+  members            Member[]
+  plans              MembershipPlan[]
+  membershipPeriods  MembershipPeriod[]
+  membershipPauses   MembershipPause[]
+  attendanceRecords  AttendanceRecord[]
+  attendanceBatches  AttendanceImportBatch[]
+  retentionSnapshots RetentionSnapshot[]
+  churnPredictions   ChurnPrediction[]
+  auditLogs          AuditLog[]
+
+  @@index([isSynthetic])
+}
+
+model StudioUser {
+  id         String         @id @default(uuid()) @db.Uuid
+  studioId   String         @db.Uuid
+  authUserId String         @db.Uuid
+  role       StudioUserRole @default(MANAGER)
+  createdAt  DateTime       @default(now()) @db.Timestamptz(6)
+  studio     Studio         @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  auditLogs  AuditLog[]
+
+  @@unique([studioId, authUserId])
+  @@unique([id, studioId])
+  @@index([authUserId])
+}
+
+model StudioSettings {
+  id                     String    @id @default(uuid()) @db.Uuid
+  studioId               String    @unique @db.Uuid
+  attendanceCoverageFrom DateTime? @db.Date
+  coverageVerifiedAt     DateTime? @db.Timestamptz(6)
+  createdAt              DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt              DateTime  @updatedAt @db.Timestamptz(6)
+  studio                 Studio    @relation(fields: [studioId], references: [id], onDelete: Cascade)
+}
+
+model Member {
+  id                 String              @id @default(uuid()) @db.Uuid
+  studioId           String              @db.Uuid
+  firstName          String
+  lastName           String
+  email              String?
+  phone              String?
+  joinedAt           DateTime            @default(now()) @db.Timestamptz(6)
+  createdAt          DateTime            @default(now()) @db.Timestamptz(6)
+  updatedAt          DateTime            @updatedAt @db.Timestamptz(6)
+  studio             Studio              @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  membershipPeriods  MembershipPeriod[]
+  attendanceRecords  AttendanceRecord[]
+  retentionSnapshots RetentionSnapshot[]
+  churnPredictions   ChurnPrediction[]
+
+  @@unique([id, studioId])
+  @@unique([studioId, email])
+  @@index([studioId, lastName, firstName])
+}
+
+model MembershipPlan {
+  id                String             @id @default(uuid()) @db.Uuid
+  studioId          String             @db.Uuid
+  name              String
+  durationDays      Int
+  priceCents        Int
+  createdAt         DateTime           @default(now()) @db.Timestamptz(6)
+  studio            Studio             @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  membershipPeriods MembershipPeriod[]
+
+  @@unique([id, studioId])
+  @@unique([studioId, name])
+}
+
+model MembershipPeriod {
+  id              String             @id @default(uuid()) @db.Uuid
+  studioId        String             @db.Uuid
+  memberId        String             @db.Uuid
+  planId          String             @db.Uuid
+  startsAt        DateTime           @db.Date
+  originalEndsAt  DateTime           @db.Date
+  effectiveEndsAt DateTime           @db.Date
+  status          MembershipStatus
+  renewedFromId  String?            @db.Uuid
+  cancelledAt     DateTime?          @db.Timestamptz(6)
+  createdAt       DateTime           @default(now()) @db.Timestamptz(6)
+  studio          Studio             @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  member          Member             @relation(fields: [memberId, studioId], references: [id, studioId], onDelete: Restrict)
+  plan            MembershipPlan     @relation(fields: [planId, studioId], references: [id, studioId], onDelete: Restrict)
+  renewedFrom     MembershipPeriod?  @relation("MembershipRenewals", fields: [renewedFromId, studioId], references: [id, studioId], onDelete: Restrict)
+  renewals        MembershipPeriod[] @relation("MembershipRenewals")
+  pauses          MembershipPause[]
+
+  @@unique([id, studioId])
+  @@index([studioId, memberId, status])
+  @@index([studioId, effectiveEndsAt])
+}
+
+model MembershipPause {
+  id        String           @id @default(uuid()) @db.Uuid
+  studioId  String           @db.Uuid
+  periodId  String           @db.Uuid
+  startsAt  DateTime         @db.Date
+  resumesAt DateTime?        @db.Date
+  createdAt DateTime         @default(now()) @db.Timestamptz(6)
+  studio    Studio           @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  period    MembershipPeriod @relation(fields: [periodId, studioId], references: [id, studioId], onDelete: Cascade)
+
+  @@unique([id, studioId])
+  @@index([studioId, periodId, startsAt])
+}
+
+model AttendanceImportBatch {
+  id             String             @id @default(uuid()) @db.Uuid
+  studioId       String             @db.Uuid
+  sourceName     String
+  idempotencyKey String
+  importedAt     DateTime           @default(now()) @db.Timestamptz(6)
+  rowCount       Int                @default(0)
+  studio         Studio             @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  records        AttendanceRecord[]
+
+  @@unique([id, studioId])
+  @@unique([studioId, idempotencyKey])
+}
+
+model AttendanceRecord {
+  id         String                 @id @default(uuid()) @db.Uuid
+  studioId   String                 @db.Uuid
+  memberId   String                 @db.Uuid
+  batchId    String?                @db.Uuid
+  occurredAt DateTime               @db.Timestamptz(6)
+  localDate  DateTime               @db.Date
+  source     AttendanceSource
+  createdAt  DateTime               @default(now()) @db.Timestamptz(6)
+  studio     Studio                 @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  member     Member                 @relation(fields: [memberId, studioId], references: [id, studioId], onDelete: Restrict)
+  batch      AttendanceImportBatch? @relation(fields: [batchId, studioId], references: [id, studioId], onDelete: Restrict)
+
+  @@unique([studioId, memberId, localDate])
+  @@unique([id, studioId])
+  @@index([studioId, localDate])
+}
+
+model RetentionSnapshot {
+  id              String                @id @default(uuid()) @db.Uuid
+  studioId        String                @db.Uuid
+  memberId        String                @db.Uuid
+  snapshotDate    DateTime              @db.Date
+  snapshotType    RetentionSnapshotType
+  score           Int
+  category        String
+  dimensionScores Json
+  indicators      Json
+  recommendation  String?
+  isComplete      Boolean
+  scoringVersion  String
+  createdAt       DateTime              @default(now()) @db.Timestamptz(6)
+  studio          Studio                @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  member          Member                @relation(fields: [memberId, studioId], references: [id, studioId], onDelete: Restrict)
+
+  @@unique([studioId, memberId, snapshotDate, snapshotType, scoringVersion])
+  @@index([studioId, category, snapshotDate])
+}
+
+model ChurnPrediction {
+  id              String   @id @default(uuid()) @db.Uuid
+  studioId        String   @db.Uuid
+  memberId        String   @db.Uuid
+  predictionDate  DateTime @db.Date
+  horizonDays     Int
+  modelVersion    String
+  probability     Decimal  @db.Decimal(5, 4)
+  featureSnapshot Json
+  featureSnapshotAt DateTime @db.Timestamptz(6)
+  featureSchemaVersion String
+  createdAt       DateTime @default(now()) @db.Timestamptz(6)
+  studio          Studio   @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  member          Member   @relation(fields: [memberId, studioId], references: [id, studioId], onDelete: Restrict)
+
+  @@unique([studioId, memberId, predictionDate, horizonDays, modelVersion])
+  @@index([studioId, predictionDate])
+}
+
+model AuditLog {
+  id         String      @id @default(uuid()) @db.Uuid
+  studioId   String      @db.Uuid
+  actorId    String?     @db.Uuid
+  action     String
+  entityType String
+  entityId   String
+  metadata   Json?
+  createdAt  DateTime    @default(now()) @db.Timestamptz(6)
+  studio     Studio      @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  actor      StudioUser? @relation(fields: [actorId, studioId], references: [id, studioId], onDelete: Restrict)
+
+  @@index([studioId, entityType, entityId])
+  @@index([studioId, createdAt])
+}

@@ -1,0 +1,47 @@
+{
+  "config": {
+    "dataset_version": "1.2.0",
+    "evaluation_date": "2025-12-31",
+    "generator_version": "1.2.0",
+    "member_count": 350,
+    "months": 12,
+    "seed": 20251120,
+    "timezone": "America/New_York"
+  },
+  "datasetVersion": "1.2.0",
+  "entityCounts": {
+    "attendanceImportBatches": 1,
+    "attendanceRecords": 2356,
+    "churnPredictions": 0,
+    "members": 350,
+    "membershipPauses": 36,
+    "membershipPeriods": 441,
+    "membershipPlans": 3,
+    "retentionSnapshots": 0,
+    "scenarios": 10,
+    "studioSettings": 1,
+    "studios": 1
+  },
+  "generatedAt": "2025-12-31T00:00:00Z",
+  "generatorVersion": "1.2.0",
+  "scenarioIds": [
+    "attendance-coverage-60-days",
+    "last-attendance-45-days-ago",
+    "zero-visits-complete-coverage",
+    "incomplete-attendance-coverage",
+    "two-non-renewal-opportunities",
+    "renewal-on-grace-day-12",
+    "two-membership-pauses",
+    "churn-then-reactivation",
+    "approaching-expiry-confirmed-renewal",
+    "insufficient-retention-history"
+  ],
+  "schemaVersion": "prisma-foundation-v2",
+  "seed": 20251120,
+  "syntheticIntelligence": {
+    "churnPredictionsIncluded": false,
+    "limitation": "No synthetic intelligence outputs are operational results.",
+    "retentionSnapshotsIncluded": false
+  },
+  "syntheticStudioId": "abc60254-a61e-5449-8082-9f476c95941f"
+}

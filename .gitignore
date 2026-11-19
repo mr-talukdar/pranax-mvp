@@ -23,6 +23,7 @@ secrets/
 
 # Python
 .venv/
+.venv-*/
 venv/
 __pycache__/
 *.py[cod]
@@ -47,3 +48,19 @@ Thumbs.db
 
 # Logs
 *.log
+.env
+.env.*
+!.env.example
+node_modules/
+.next/
+dist/
+coverage/
+*.log
+__pycache__/
+.pytest_cache/
+.venv/
+*.py[cod]
+
+# Project progress tracking
+# Keep the root implementation ledger in version control.
+!progress.md

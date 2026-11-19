@@ -15,7 +15,7 @@ Follow the root [AGENTS.md](/home/mr-talukdar/Projects/pranax-mvp/AGENTS.md). Th
 - Frontend validation, loading and error states, and testing.
 - Frontend environment variable declarations.
 
-Do not implement backend routes, business authorization, database access, or analytics service logic here. Coordinate API shapes with the backend and contracts owners.
+Keep browser components free of database access and authorization decisions. The app's server-only modules and Route Handlers own the current application boundary; coordinate any future cross-service contracts with the contracts owner.
 
 ## Standards
 

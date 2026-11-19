@@ -10,8 +10,7 @@ This repository currently establishes the engineering foundation only. Do not im
 
 ## Architecture and boundaries
 
-- `apps/web/`: Next.js and TypeScript frontend. Deployment target: Vercel-compatible projects.
-- `services/api/`: Node.js, Express, and TypeScript backend. Deployment target: Google Cloud Run-compatible services.
+- `apps/web/`: Next.js frontend and server-only application boundary. Deployment target: Vercel-compatible projects.
 - `services/intelligence/`: Python and FastAPI analytics and AI service. It has independent dependency management and is not a pnpm workspace member.
 - `packages/contracts/`: shared TypeScript API contracts and schemas.
 - `packages/config/`: shared non-secret configuration conventions and reusable configuration where appropriate.
