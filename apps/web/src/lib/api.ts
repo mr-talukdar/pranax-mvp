@@ -45,9 +45,36 @@ type ApiAttendanceRow = {
 let cachedToken: string | null = null;
 let sessionPromise: Promise<string | null> | null = null;
 
+function isAccessTokenExpired(token: string): boolean {
+  try {
+    const payload = token.split('.')[1];
+    if (!payload) return true;
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const claims = JSON.parse(window.atob(base64)) as { exp?: unknown };
+    return typeof claims.exp !== 'number' || claims.exp * 1000 <= Date.now() + 30_000;
+  } catch {
+    return true;
+  }
+}
+
 export async function ensureAuth(): Promise<string | null> {
   if (typeof window === 'undefined') {
     return null;
+  }
+  if (!cachedToken) {
+    try {
+      cachedToken = window.localStorage.getItem('pranax_demo_token');
+    } catch {
+      // Storage may be unavailable in restricted browser contexts.
+    }
+  }
+  if (cachedToken && isAccessTokenExpired(cachedToken)) {
+    cachedToken = null;
+    try {
+      window.localStorage.removeItem('pranax_demo_token');
+    } catch {
+      // Continue without a cached token when storage is unavailable.
+    }
   }
   if (cachedToken) {
     return cachedToken;
@@ -57,11 +84,19 @@ export async function ensureAuth(): Promise<string | null> {
       try {
         const res = await globalThis.fetch('/api/auth/demo-session', {
           method: 'POST',
+          credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
         });
         if (res.ok) {
           const json = await res.json();
           cachedToken = json.data?.accessToken ?? null;
+          if (cachedToken) {
+            try {
+              window.localStorage.setItem('pranax_demo_token', cachedToken);
+            } catch {
+              // Keep the in-memory token when persistent storage is unavailable.
+            }
+          }
           return cachedToken;
         }
       } catch (err) {
@@ -87,6 +122,10 @@ export async function getAuthHeaders(extraHeaders: Record<string, string> = {}):
   return headers;
 }
 
+function apiFetch(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+  return globalThis.fetch(input, { ...init, credentials: 'include' });
+}
+
 export async function fetchDashboardData(options?: {
   asOfDate?: string;
   studioId?: string;
@@ -99,7 +138,7 @@ export async function fetchDashboardData(options?: {
   const headers = await getAuthHeaders();
   headers['x-studio-id'] = studioId;
 
-  const res = await globalThis.fetch(`/api/dashboard${queryStr}`, {
+  const res = await apiFetch(`/api/dashboard${queryStr}`, {
     headers,
     cache: 'no-store',
   });
@@ -136,7 +175,7 @@ export async function fetchMembers(options?: {
   const query = params.toString() ? `?${params.toString()}` : '';
   const headers = await getAuthHeaders();
 
-  const res = await globalThis.fetch(`/api/members${query}`, {
+  const res = await apiFetch(`/api/members${query}`, {
     headers,
     cache: 'no-store',
   });
@@ -193,10 +232,10 @@ export async function fetchMemberById(id: string): Promise<MemberDetail> {
   const headers = await getAuthHeaders();
 
   const [memberRes, membershipsRes, attendanceRes, retentionRes] = await Promise.all([
-    globalThis.fetch(`/api/members/${id}`, { headers, cache: 'no-store' }),
-    globalThis.fetch(`/api/members/${id}/memberships`, { headers, cache: 'no-store' }).catch(() => null),
-    globalThis.fetch(`/api/members/${id}/attendance`, { headers, cache: 'no-store' }).catch(() => null),
-    globalThis.fetch(`/api/members/${id}/retention`, { headers, cache: 'no-store' }).catch(() => null),
+    apiFetch(`/api/members/${id}`, { headers, cache: 'no-store' }),
+    apiFetch(`/api/members/${id}/memberships`, { headers, cache: 'no-store' }).catch(() => null),
+    apiFetch(`/api/members/${id}/attendance`, { headers, cache: 'no-store' }).catch(() => null),
+    apiFetch(`/api/members/${id}/retention`, { headers, cache: 'no-store' }).catch(() => null),
   ]);
 
   if (!memberRes.ok) {
@@ -279,7 +318,7 @@ export async function createMemberApi(data: {
 }): Promise<{ id: string; firstName: string; lastName: string }> {
   const headers = await getAuthHeaders({ 'Content-Type': 'application/json' });
 
-  const res = await globalThis.fetch('/api/members', {
+  const res = await apiFetch('/api/members', {
     method: 'POST',
     headers,
     body: JSON.stringify(data),
@@ -301,7 +340,7 @@ export async function pauseMembershipApi(
 ): Promise<Record<string, unknown>> {
   const headers = await getAuthHeaders({ 'Content-Type': 'application/json' });
 
-  const res = await globalThis.fetch(
+  const res = await apiFetch(
     `/api/members/${memberId}/memberships/${periodId}/pause`,
     {
       method: 'POST',
@@ -325,7 +364,7 @@ export async function resumeMembershipApi(
 ): Promise<Record<string, unknown>> {
   const headers = await getAuthHeaders({ 'Content-Type': 'application/json' });
 
-  const res = await globalThis.fetch(
+  const res = await apiFetch(
     `/api/members/${memberId}/memberships/${periodId}/resume`,
     {
       method: 'POST',
@@ -349,7 +388,7 @@ export async function renewMembershipApi(
 ): Promise<Record<string, unknown>> {
   const headers = await getAuthHeaders({ 'Content-Type': 'application/json' });
 
-  const res = await globalThis.fetch(
+  const res = await apiFetch(
     `/api/members/${memberId}/memberships/${periodId}/renew`,
     {
       method: 'POST',
@@ -373,7 +412,7 @@ export async function cancelMembershipApi(
 ): Promise<Record<string, unknown>> {
   const headers = await getAuthHeaders({ 'Content-Type': 'application/json' });
 
-  const res = await globalThis.fetch(
+  const res = await apiFetch(
     `/api/members/${memberId}/memberships/${periodId}/cancel`,
     {
       method: 'POST',
@@ -407,7 +446,7 @@ export async function fetchAttendanceRecords(options?: {
   const query = params.toString() ? `?${params.toString()}` : '';
   const headers = await getAuthHeaders();
 
-  const res = await globalThis.fetch(`/api/attendance${query}`, {
+  const res = await apiFetch(`/api/attendance${query}`, {
     headers,
     cache: 'no-store',
   });
@@ -449,7 +488,7 @@ export async function recordCheckInApi(data: {
 }> {
   const headers = await getAuthHeaders({ 'Content-Type': 'application/json' });
 
-  const res = await globalThis.fetch('/api/attendance/check-in', {
+  const res = await apiFetch('/api/attendance/check-in', {
     method: 'POST',
     headers,
     body: JSON.stringify(data),
@@ -477,7 +516,7 @@ export async function importAttendanceCsvApi(
   const isFormData = typeof FormData !== 'undefined' && payload instanceof FormData;
   const headers = await getAuthHeaders(isFormData ? {} : { 'Content-Type': 'application/json' });
 
-  const res = await globalThis.fetch('/api/attendance/import', {
+  const res = await apiFetch('/api/attendance/import', {
     method: 'POST',
     headers,
     body: isFormData ? payload : JSON.stringify(payload),

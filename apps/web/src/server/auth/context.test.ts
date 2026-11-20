@@ -106,6 +106,23 @@ describe('getStudioContext server-side resolution', () => {
     expect(withVerifiedStudioContextMock).not.toHaveBeenCalled();
   });
 
+  it('falls back to the verified cookie session when a supplied bearer token is stale', async () => {
+    mockSupabase.auth.getUser
+      .mockResolvedValueOnce({ data: { user: null }, error: new Error('Invalid JWT') })
+      .mockResolvedValueOnce({ data: { user: { id: demoUserId } }, error: null });
+
+    const context = await getStudioContext(targetStudioId, 'Bearer stale-token');
+
+    expect(context).toEqual({ authUserId: demoUserId, studioId: targetStudioId });
+    expect(mockSupabase.auth.getUser).toHaveBeenNthCalledWith(1, 'stale-token');
+    expect(mockSupabase.auth.getUser).toHaveBeenNthCalledWith(2);
+    expect(withVerifiedStudioContextMock).toHaveBeenCalledWith(
+      demoUserId,
+      targetStudioId,
+      expect.any(Function),
+    );
+  });
+
   it('rejects when user membership is revoked or absent', async () => {
     withVerifiedStudioContextMock.mockRejectedValue(
       new Error('Authenticated user is not a member of the selected studio.'),

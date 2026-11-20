@@ -15,9 +15,13 @@ export async function getStudioContext(
 ): Promise<StudioContext | undefined> {
   const supabase = await createSupabaseServerClient();
   const token = authHeader?.replace(/^Bearer\s+/i, '').trim();
-  const { data, error } = token
+  let { data, error } = token
     ? await supabase.auth.getUser(token)
     : await supabase.auth.getUser();
+  if (token && (error || !data.user)) {
+    // A stale client token must not hide a valid server cookie session.
+    ({ data, error } = await supabase.auth.getUser());
+  }
   if (error || !data.user) {
     return undefined;
   }
