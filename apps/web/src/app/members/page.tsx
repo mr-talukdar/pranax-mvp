@@ -4,10 +4,19 @@ import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { AppShell } from '../../components/shell/AppShell';
 import type { MemberSummary } from '../../lib/types';
-import { fetchMembers } from '../../lib/api';
+import { fetchDashboardData, fetchMembers } from '../../lib/api';
+
+type StudioMemberCounts = {
+  active: number;
+  paused: number;
+  expired: number;
+  highRisk: number;
+};
 
 export default function MembersPage() {
   const [members, setMembers] = useState<MemberSummary[]>([]);
+  const [memberTotal, setMemberTotal] = useState(0);
+  const [studioCounts, setStudioCounts] = useState<StudioMemberCounts | null>(null);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'active' | 'paused' | 'expiring' | 'high_risk' | 'new'>('all');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -17,9 +26,24 @@ export default function MembersPage() {
   const loadMembers = () => {
     setLoading(true);
     setError(null);
-    fetchMembers({ limit: 100 })
-      .then((data) => {
+    Promise.all([
+      fetchMembers({ limit: 100 }),
+      fetchDashboardData().catch((dashboardError) => {
+        console.error('Failed to load studio member counts', dashboardError);
+        return null;
+      }),
+    ])
+      .then(([data, dashboard]) => {
         setMembers(data.members);
+        setMemberTotal(data.total);
+        if (dashboard) {
+          setStudioCounts({
+            active: dashboard.activeMembers,
+            paused: dashboard.membershipBreakdown.paused,
+            expired: dashboard.membershipBreakdown.expired,
+            highRisk: dashboard.retentionSummary.highCount,
+          });
+        }
         setLoading(false);
       })
       .catch((err) => {
@@ -55,13 +79,13 @@ export default function MembersPage() {
   }, [members, search, filter]);
 
   const stats = useMemo(() => {
-    const total = members.length;
-    const active = members.filter((m) => m.status === 'ACTIVE').length;
-    const paused = members.filter((m) => m.status === 'PAUSED').length;
-    const expired = members.filter((m) => m.status === 'EXPIRED').length;
-    const highRisk = members.filter((m) => m.retentionCategory === 'HIGH').length;
+    const total = memberTotal;
+    const active = studioCounts?.active ?? members.filter((m) => m.status === 'ACTIVE').length;
+    const paused = studioCounts?.paused ?? members.filter((m) => m.status === 'PAUSED').length;
+    const expired = studioCounts?.expired ?? members.filter((m) => m.status === 'EXPIRED').length;
+    const highRisk = studioCounts?.highRisk ?? members.filter((m) => m.retentionCategory === 'HIGH').length;
     return { total, active, paused, expired, highRisk };
-  }, [members]);
+  }, [memberTotal, members, studioCounts]);
 
   const toggleSelectAll = () => {
     if (selectedIds.length === filteredMembers.length) {
@@ -310,7 +334,7 @@ export default function MembersPage() {
                             >
                               <span className="w-1.5 h-1.5 rounded-full bg-current" />
                               {member.retentionCategory}
-                              {member.retentionScore !== null ? ` (${member.retentionScore})` : ''}
+                              {member.retentionScore !== null ? ` (${member.retentionScore}/100)` : ''}
                             </span>
                           ) : (
                             <span className="text-text-muted font-body-sm">—</span>
@@ -322,6 +346,7 @@ export default function MembersPage() {
                         <td className="py-3.5 px-4 text-right">
                           <Link
                             href={`/members/${member.id}`}
+                            aria-label={`View ${member.firstName} ${member.lastName}'s profile`}
                             className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-primary font-label-md text-label-md font-semibold transition-colors"
                           >
                             <span>Profile</span>

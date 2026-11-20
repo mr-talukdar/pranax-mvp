@@ -248,7 +248,11 @@ export default function RetentionPage() {
                   <tr className="border-b border-border-delicate text-on-surface-variant font-label-sm">
                     <th className="py-3 font-semibold">Member</th>
                     <th className="py-3 font-semibold">Plan</th>
-                    <th className="py-3 font-semibold">Triage Score</th>
+                    <th className="py-3 font-semibold">
+                      <span title="Higher scores indicate greater outreach priority; this is not a churn probability.">
+                        Triage Score
+                      </span>
+                    </th>
                     <th className="py-3 font-semibold">Drift Signal</th>
                     <th className="py-3 font-semibold">Primary Recommendation</th>
                     <th className="py-3 font-semibold text-right">Actions</th>
@@ -280,7 +284,7 @@ export default function RetentionPage() {
                           }`}
                         >
                           <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                          {item.category} ({item.score})
+                          {item.category} ({item.score}/100)
                         </span>
                       </td>
                       <td className="py-3.5 pr-4 text-text-muted font-body-sm">{item.cadenceDrop}</td>
@@ -290,6 +294,7 @@ export default function RetentionPage() {
                       <td className="py-3.5 text-right">
                         <Link
                           href={`/members/${item.memberId}`}
+                          aria-label={`Review ${item.memberName}'s retention profile`}
                           className="px-3.5 py-1.5 rounded-xl bg-primary text-on-primary font-label-sm text-label-sm font-semibold hover:bg-primary-container shadow-xs transition-all"
                         >
                           Review Profile

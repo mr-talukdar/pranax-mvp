@@ -80,6 +80,8 @@ export const memberSummarySchema = z.object({
   joinedAt: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),
+  retentionCategory: z.enum(['LOW', 'MEDIUM', 'HIGH', 'LIMITED']).nullable().optional(),
+  retentionScore: z.number().int().min(0).max(100).nullable().optional(),
   currentMembership: z
     .object({
       id: z.string().uuid(),

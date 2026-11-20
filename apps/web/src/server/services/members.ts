@@ -126,6 +126,16 @@ export async function listMembers(
             joinedAt: true,
             createdAt: true,
             updatedAt: true,
+            retentionSnapshots: {
+              where: { studioId: context.studioId },
+              orderBy: [{ snapshotDate: 'desc' }, { createdAt: 'desc' }],
+              take: 1,
+              select: {
+                category: true,
+                score: true,
+                isComplete: true,
+              },
+            },
             membershipPeriods: {
               where: { studioId: context.studioId },
               orderBy: [{ effectiveEndsAt: 'desc' }, { createdAt: 'desc' }],
@@ -147,6 +157,16 @@ export async function listMembers(
 
       const data: MemberSummary[] = rows.map((row) => {
         const current = row.membershipPeriods[0];
+        const latestRetention = row.retentionSnapshots[0];
+        const rawCategory = latestRetention?.category.toUpperCase();
+        const retentionCategory: MemberSummary['retentionCategory'] =
+          !latestRetention
+            ? null
+            : !latestRetention.isComplete || rawCategory === 'LIMITED'
+              ? 'LIMITED'
+              : rawCategory === 'LOW' || rawCategory === 'MEDIUM' || rawCategory === 'HIGH'
+                ? rawCategory
+                : null;
         return {
           id: row.id,
           firstName: row.firstName,
@@ -156,6 +176,8 @@ export async function listMembers(
           joinedAt: row.joinedAt.toISOString(),
           createdAt: row.createdAt.toISOString(),
           updatedAt: row.updatedAt.toISOString(),
+          retentionCategory,
+          retentionScore: latestRetention?.score ?? null,
           currentMembership: current
             ? {
                 id: current.id,

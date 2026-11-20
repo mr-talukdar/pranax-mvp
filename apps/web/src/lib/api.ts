@@ -215,8 +215,8 @@ export async function fetchMembers(options?: {
       planName: m.currentMembership?.planName ?? 'No Active Pass',
       lastVisit: null,
       cadence: status === 'ACTIVE' ? 'Active Member' : 'Inactive / Paused',
-      retentionCategory: null,
-      retentionScore: null,
+      retentionCategory: m.retentionCategory ?? null,
+      retentionScore: m.retentionScore ?? null,
       avatarBg: avatarBgs[index % avatarBgs.length],
     };
   });
