@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+import itertools
 from dataclasses import dataclass
-from datetime import date, datetime, time, timedelta, timezone
-from decimal import Decimal, ROUND_HALF_UP
-from types import MappingProxyType
+from datetime import UTC, date, datetime, time, timedelta, timezone
+from decimal import ROUND_HALF_UP, Decimal
 from statistics import median
+from types import MappingProxyType
 from zoneinfo import ZoneInfo
 
 from .contracts import (
@@ -45,7 +46,7 @@ class _Component:
 
 
 def _round_score(value: Decimal) -> int:
-    return int(value.quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+    return int(value.quantize(Decimal(1), rounding=ROUND_HALF_UP))
 
 
 def _category(score: int) -> RiskCategory:
@@ -72,13 +73,13 @@ def _as_of_attendance(payload: AssessmentInput):
     zone = ZoneInfo(payload.timezone)
     as_of = _local_as_of_timestamp(
         payload.assessment_date, payload.timezone
-    ).astimezone(timezone.utc)
+    ).astimezone(UTC)
     return tuple(
         row
         for row in payload.attendance
         if row.local_date <= payload.assessment_date
         and row.occurred_at.astimezone(zone).date() <= payload.assessment_date
-        and row.recorded_at.astimezone(timezone.utc) <= as_of
+        and row.recorded_at.astimezone(UTC) <= as_of
     )
 
 
@@ -87,33 +88,31 @@ def _known_membership_periods(
 ) -> list[MembershipPeriodEvidence]:
     as_of = _local_as_of_timestamp(
         payload.assessment_date, payload.timezone
-    ).astimezone(timezone.utc)
+    ).astimezone(UTC)
     return [
         period
         for period in payload.membership_periods
-        if period.recorded_at.astimezone(timezone.utc) <= as_of
+        if period.recorded_at.astimezone(UTC) <= as_of
     ]
 
 
 def _known_membership_pauses(payload: AssessmentInput) -> list[MembershipPauseEvidence]:
     as_of = _local_as_of_timestamp(
         payload.assessment_date, payload.timezone
-    ).astimezone(timezone.utc)
+    ).astimezone(UTC)
     return [
         pause
         for pause in payload.membership_pauses
-        if pause.recorded_at.astimezone(timezone.utc) <= as_of
+        if pause.recorded_at.astimezone(timezone.utc) <= as_of  # noqa: UP017
     ]
 
 
 def _cancellation_known(
     payload: AssessmentInput, period: MembershipPeriodEvidence
 ) -> bool:
-    return period.cancelled_at is not None and period.cancelled_at.astimezone(
-        timezone.utc
-    ) <= (
+    return period.cancelled_at is not None and period.cancelled_at.astimezone(UTC) <= (
         _local_as_of_timestamp(payload.assessment_date, payload.timezone).astimezone(
-            timezone.utc
+            UTC
         )
     )
 
@@ -183,7 +182,7 @@ def _lifecycle_history(
 ) -> tuple[LifecycleState, tuple[LifecycleEvent, ...]]:
     as_of = _local_as_of_timestamp(
         payload.assessment_date, payload.timezone
-    ).astimezone(timezone.utc)
+    ).astimezone(UTC)
     known = [
         period
         for period in _known_membership_periods(payload)
@@ -228,7 +227,7 @@ def _lifecycle_history(
         renewed_within_grace = any(
             candidate.renewed_from_id == period.id
             and candidate.starts_at <= effective_end + timedelta(days=GRACE_DAYS)
-            and candidate.recorded_at.astimezone(timezone.utc) <= as_of
+            and candidate.recorded_at.astimezone(UTC) <= as_of
             for candidate in payload.membership_periods
         )
         if not renewed_within_grace:
@@ -330,9 +329,9 @@ def _coverage_reasons(payload: AssessmentInput) -> list[str]:
             reasons.append(
                 "Fewer than 60 calendar days of verified attendance coverage are available."
             )
-        if coverage.verified_at.astimezone(timezone.utc) > _local_as_of_timestamp(
+        if coverage.verified_at.astimezone(UTC) > _local_as_of_timestamp(
             payload.assessment_date, payload.timezone
-        ).astimezone(timezone.utc):
+        ).astimezone(UTC):
             reasons.append(
                 "Attendance coverage verification occurred after the assessment date."
             )
@@ -366,7 +365,7 @@ def _score_recency(payload: AssessmentInput) -> DimensionScore:
         and (coverage.end_date is None or day <= coverage.end_date)
     ]
     intervals = [
-        (right - left).days for left, right in zip(baseline_visits, baseline_visits[1:])
+        (right - left).days for left, right in itertools.pairwise(baseline_visits)
     ]
     reliability = "UNAVAILABLE"
     personal_cadence: float | None = None
@@ -533,10 +532,10 @@ def _score_consistency(payload: AssessmentInput) -> _Component:
         if recent_start <= row.local_date <= payload.assessment_date
     )
     baseline_intervals = [
-        (right - left).days for left, right in zip(baseline_visits, baseline_visits[1:])
+        (right - left).days for left, right in itertools.pairwise(baseline_visits)
     ]
     recent_intervals = [
-        (right - left).days for left, right in zip(recent_visits, recent_visits[1:])
+        (right - left).days for left, right in itertools.pairwise(recent_visits)
     ]
     if len(baseline_intervals) < 5 or not recent_intervals:
         return _Component(
@@ -579,7 +578,7 @@ def _score_consistency(payload: AssessmentInput) -> _Component:
         else 70
         if deterioration < 200
         else 100
-    )
+    )  # NEED TO CHECK BEFORE SUBMIT
     return _Component(
         score,
         40,
@@ -1034,7 +1033,7 @@ def assess_retention(payload: AssessmentInput) -> AssessmentOutput:
     """Assess one tenant-scoped member using evidence available as of the date."""
     assessed_at = _local_as_of_timestamp(
         payload.assessment_date, payload.timezone
-    ).astimezone(timezone.utc)
+    ).astimezone(UTC)
     active_periods, exclusion_reason = _eligible_periods(payload)
     lifecycle_state, lifecycle_events = _lifecycle_history(payload, active_periods)
     empty_dimensions = {
