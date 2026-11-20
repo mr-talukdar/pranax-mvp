@@ -1,6 +1,7 @@
 'use client';
 
 import { getInitials, type AppSession } from './AppSession';
+import { BrandLogo } from '../brand/BrandLogo';
 
 interface HeaderProps {
   session: AppSession;
@@ -11,7 +12,7 @@ interface HeaderProps {
 export function Header({ session, onToggleSidebar, title }: HeaderProps) {
   return (
     <header className="sticky top-0 z-40 h-16 w-full bg-surface-container-lowest/90 backdrop-blur-xl border-b border-border-delicate px-4 sm:px-6 lg:px-8 flex items-center justify-between shadow-[0_1px_8px_rgba(0,0,0,0.02)]">
-      <div className="flex items-center gap-space-md">
+      <div className="flex min-w-0 items-center gap-space-md">
         {/* Mobile Hamburger */}
         <button
           onClick={onToggleSidebar}
@@ -20,11 +21,12 @@ export function Header({ session, onToggleSidebar, title }: HeaderProps) {
         >
           <span className="material-symbols-outlined text-[22px]">menu</span>
         </button>
+        <BrandLogo className="h-[30px] w-[76px] lg:hidden" />
 
         {/* Breadcrumb / Title */}
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 items-center gap-2">
           {title && (
-            <span className="font-headline-sm text-headline-sm font-bold text-on-surface">
+            <span className="max-w-[110px] truncate font-headline-sm text-headline-sm font-bold text-on-surface sm:max-w-[180px] lg:max-w-none">
               {title}
             </span>
           )}

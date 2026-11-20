@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="440" viewBox="0 0 900 440">
+<rect width="900" height="440" fill="#fff"/><text x="40" y="42" font-family="sans-serif" font-size="24" font-weight="bold">PranaX API health probe latency</text>
+<text x="40" y="70" font-family="sans-serif" font-size="14">Live Cloud Run · GET /health · 20 serial requests · 2026-11-20 20:11:47–20:11:52 UTC</text>
+<line x1="180" y1="120" x2="180" y2="350" stroke="#888"/><line x1="180" y1="350" x2="820" y2="350" stroke="#888"/>
+<g font-family="sans-serif" font-size="13" fill="#333"><text x="45" y="155">Mean 162.96 ms</text><text x="45" y="205">Median 161.89 ms</text><text x="45" y="255">p95* 174.01 ms</text><text x="45" y="305">Max 179.26 ms</text><text x="180" y="377">0</text><text x="385" y="377">60</text><text x="590" y="377">120</text><text x="795" y="377">180 ms</text></g>
+<rect x="180" y="132" width="580" height="25" rx="4" fill="#4f7e87"/><rect x="180" y="182" width="576" height="25" rx="4" fill="#6e9f9c"/><rect x="180" y="232" width="619" height="25" rx="4" fill="#d59643"/><rect x="180" y="282" width="637" height="25" rx="4" fill="#a9574c"/>
+<text x="40" y="418" font-family="sans-serif" font-size="12">*Nearest-rank at n=20; exploratory only. End-to-end client timing includes network/TLS. p99 unavailable.</text></svg>

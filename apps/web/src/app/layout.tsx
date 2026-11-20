@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import './styles.css';
+import { AppSessionProvider } from '../components/shell/AppSessionProvider';
 
 export const metadata = {
   title: 'PranaX — Fitness Business OS',
@@ -24,7 +25,7 @@ export default function RootLayout({
         />
       </head>
       <body className="bg-surface font-sans text-on-surface antialiased min-h-screen">
-        {children}
+        <AppSessionProvider>{children}</AppSessionProvider>
       </body>
     </html>
   );

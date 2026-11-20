@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { getInitials, type AppSession } from './AppSession';
+import { BrandLogo } from '../brand/BrandLogo';
 
 interface SidebarProps {
   session: AppSession;
@@ -43,9 +44,9 @@ export function Sidebar({ session, onSignOut, onCloseMobile }: SidebarProps) {
       href: '#',
       icon: 'auto_awesome',
       iconClass: 'text-tertiary',
-      badge: 'Beta',
+      badge: 'Coming Soon',
       badgeClass:
-        'bg-tertiary-fixed text-on-tertiary-fixed font-semibold uppercase',
+        'bg-surface-container-high text-on-surface-variant',
       active: false,
     },
   ];
@@ -54,23 +55,17 @@ export function Sidebar({ session, onSignOut, onCloseMobile }: SidebarProps) {
     <aside className="h-full w-[220px] bg-surface-container-lowest border-r border-outline-variant/40 flex flex-col justify-between select-none">
       <div className="flex flex-col">
         {/* Brand header */}
-        <div className="h-16 px-space-md flex items-center justify-between border-b border-outline-variant/30">
+        <div className="min-h-[76px] px-3 flex items-center justify-between border-b border-outline-variant/30">
           <Link
             href="/dashboard"
             onClick={onCloseMobile}
-            className="flex items-center gap-2.5 min-w-0 group"
+            className="flex min-w-0 flex-1 items-center group"
           >
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-on-primary font-bold text-headline-sm shadow-xs group-hover:scale-105 transition-transform">
-              P
-            </div>
-            <div className="flex flex-col min-w-0">
-              <span className="font-headline-sm text-headline-sm text-on-surface font-bold tracking-tight truncate leading-none">
-                PranaX
-              </span>
-              <span className="font-label-sm text-label-sm text-on-surface-variant truncate mt-0.5">
-                Fitness Business OS
-              </span>
-            </div>
+            <BrandLogo
+              className={`transition-transform group-hover:scale-[1.02] ${
+                onCloseMobile ? 'h-[54px] w-[138px]' : 'h-[58px] w-[148px]'
+              }`}
+            />
           </Link>
           {onCloseMobile && (
             <button
@@ -99,19 +94,19 @@ export function Sidebar({ session, onSignOut, onCloseMobile }: SidebarProps) {
                       : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
                   }`}
                 >
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex min-w-0 items-center gap-2.5">
                     <span
-                      className={`material-symbols-outlined text-[19px] ${
+                      className={`material-symbols-outlined shrink-0 text-[19px] ${
                         item.iconClass ?? ''
                       }`}
                     >
                       {item.icon}
                     </span>
-                    <span>{item.name}</span>
+                    <span className="whitespace-nowrap">{item.name}</span>
                   </div>
                   {item.badge ? (
                     <span
-                      className={`px-1.5 py-0.5 rounded-full font-label-sm text-label-sm leading-none ${item.badgeClass}`}
+                      className={`shrink-0 whitespace-nowrap rounded-full px-1.5 py-0.5 text-[9px] font-semibold leading-none tracking-tight ${item.badgeClass}`}
                     >
                       {item.badge}
                     </span>

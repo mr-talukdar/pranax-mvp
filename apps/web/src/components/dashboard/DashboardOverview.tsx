@@ -104,12 +104,11 @@ export function DashboardOverview({ initialData }: DashboardOverviewProps) {
   const chartPoints = data.attendanceTrends.map((item, index) => {
     const x =
       data.attendanceTrends.length <= 1
-        ? 395
-        : 40 + (index * 710) / (data.attendanceTrends.length - 1);
+        ? 380
+        : 55 + (index * 650) / (data.attendanceTrends.length - 1);
     return {
       ...item,
       x,
-      y: 160 - (item.count / chartCeiling) * 135,
     };
   });
 
@@ -621,8 +620,8 @@ export function DashboardOverview({ initialData }: DashboardOverviewProps) {
                   ) : (
                     <svg
                       aria-label={`${trendMode === 'daily' ? 'Daily' : 'Monthly'} attendance trend`}
-                      className="h-full w-full overflow-visible"
-                      preserveAspectRatio="none"
+                      className="h-full w-full"
+                      preserveAspectRatio="xMidYMid meet"
                       role="img"
                       viewBox="0 0 760 180"
                     >
@@ -635,8 +634,8 @@ export function DashboardOverview({ initialData }: DashboardOverviewProps) {
                               stroke="#E3E9F3"
                               strokeDasharray={step === 0 ? undefined : '3 3'}
                               strokeWidth="1"
-                              x1="40"
-                              x2="750"
+                              x1="48"
+                              x2="748"
                               y1={y}
                               y2={y}
                             />
@@ -654,35 +653,26 @@ export function DashboardOverview({ initialData }: DashboardOverviewProps) {
                         );
                       })}
                       {chartPoints.map((point) => {
-                        const height = (point.count / chartCeiling) * 135;
-                        const barWidth = Math.min(
-                          28,
-                          560 / Math.max(chartPoints.length, 1),
-                        );
+                        const height = (point.count / chartCeiling) * 132;
+                        const spacing =
+                          chartPoints.length > 1
+                            ? 650 / (chartPoints.length - 1)
+                            : 650;
+                        const barWidth = Math.min(32, spacing * 0.56);
                         return (
                           <rect
                             key={point.date}
-                            fill="#9cb9fb"
+                            fill="#86aaf5"
                             height={height}
-                            rx="3"
+                            rx="5"
                             width={barWidth}
                             x={point.x - barWidth / 2}
                             y={160 - height}
-                          />
+                          >
+                            <title>{`${point.label}: ${point.count} visits`}</title>
+                          </rect>
                         );
                       })}
-                      {chartPoints.length > 1 && (
-                        <polyline
-                          fill="none"
-                          points={chartPoints
-                            .map((point) => `${point.x},${point.y}`)
-                            .join(' ')}
-                          stroke="#0757d5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2.5"
-                        />
-                      )}
                       {chartPoints.map((point, index) => {
                         const labelStep = Math.max(
                           1,
@@ -915,7 +905,7 @@ export function DashboardOverview({ initialData }: DashboardOverviewProps) {
                         <th className="pb-3 font-semibold">
                           Primary Recommendation
                         </th>
-                        <th className="pb-3 font-semibold text-right">
+                        <th className="w-24 whitespace-nowrap pb-3 text-right font-semibold">
                           Actions
                         </th>
                       </tr>
@@ -960,12 +950,16 @@ export function DashboardOverview({ initialData }: DashboardOverviewProps) {
                           <td className="py-3.5 pr-4 text-on-surface font-body-sm text-body-sm max-w-xs">
                             {item.primaryRecommendation}
                           </td>
-                          <td className="py-3.5 text-right">
+                          <td className="w-24 whitespace-nowrap py-3.5 text-right">
                             <Link
                               href={`/members/${item.memberId}`}
-                              className="px-3 py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container text-primary font-label-sm text-label-sm font-semibold transition-colors"
+                              aria-label={`Review ${item.memberName}'s profile`}
+                              className="inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-lg bg-surface-container-low px-2.5 py-2 text-primary font-label-sm text-label-sm font-semibold transition-colors hover:bg-surface-container"
                             >
-                              Review & Contact
+                              <span>Review</span>
+                              <span className="material-symbols-outlined text-[15px]">
+                                arrow_forward
+                              </span>
                             </Link>
                           </td>
                         </tr>

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { BrandLogo } from '../../components/brand/BrandLogo';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, type FormEvent } from 'react';
 
@@ -9,7 +10,7 @@ type DemoCredentials = { email: string; password: string };
 
 export default function AuthPage() {
   const router = useRouter();
-  const [mode, setMode] = useState<AuthMode>('create');
+  const [mode, setMode] = useState<AuthMode>('signin');
   const [fullName, setFullName] = useState('');
   const [studioName, setStudioName] = useState('');
   const [email, setEmail] = useState('');
@@ -120,16 +121,10 @@ export default function AuthPage() {
           className="flex items-center gap-3"
           aria-label="PranaX home"
         >
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0757d5] text-lg font-extrabold text-white">
-            P
-          </span>
-          <span>
-            <span className="block text-lg font-bold leading-tight tracking-tight">
-              PranaX
-            </span>
-            <span className="block text-xs font-medium text-slate-500">
-              Fitness Business OS
-            </span>
+          <BrandLogo className="h-[54px] w-[138px] sm:h-[60px] sm:w-[154px]" />
+          <span className="hidden flex-col justify-center self-center border-l border-slate-200 pl-3 text-[10px] font-semibold uppercase leading-4 tracking-[0.14em] text-slate-500 sm:flex">
+            <span>Fitness</span>
+            <span>Business OS</span>
           </span>
         </Link>
         <Link
@@ -333,7 +328,7 @@ export default function AuthPage() {
           </form>
 
           {mode === 'signin' && (
-            <div className="mt-5 rounded-xl border border-blue-100 bg-blue-50 px-4 py-4 text-sm text-blue-950">
+            <div className="mt-5 rounded-xl border border-blue-200 bg-blue-50 px-4 py-4 text-sm text-blue-950">
               <p className="font-bold">Synthetic demo account</p>
               <dl className="mt-3 grid gap-2 sm:grid-cols-[auto_1fr] sm:gap-x-4">
                 <dt className="font-semibold text-blue-900">Email</dt>
@@ -353,8 +348,11 @@ export default function AuthPage() {
                   setEmail(demoCredentials.email);
                   setPassword(demoCredentials.password);
                 }}
-                className="mt-4 rounded-lg bg-white px-3 py-2 text-xs font-bold text-blue-800 shadow-sm transition hover:bg-blue-100 disabled:cursor-wait disabled:opacity-60"
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-[#0757d5] px-4 py-3 text-sm font-bold text-white shadow-md shadow-blue-900/15 transition hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 disabled:cursor-wait disabled:opacity-60"
               >
+                <span className="material-symbols-outlined text-[18px]">
+                  login
+                </span>
                 Fill demo sign-in
               </button>
               <p className="mt-3 text-xs leading-5 text-blue-900">

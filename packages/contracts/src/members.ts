@@ -61,9 +61,21 @@ export const memberFilterStatusEnum = z.enum([
 
 export type MemberFilterStatus = z.infer<typeof memberFilterStatusEnum>;
 
+export const memberDirectoryFilterEnum = z.enum([
+  'all',
+  'active',
+  'paused',
+  'expiring',
+  'high_risk',
+  'new',
+]);
+
+export type MemberDirectoryFilter = z.infer<typeof memberDirectoryFilterEnum>;
+
 export const memberListQuerySchema = z.object({
   search: z.string().trim().optional(),
   status: memberFilterStatusEnum.optional(),
+  directoryFilter: memberDirectoryFilterEnum.default('all'),
   limit: z.coerce.number().int().min(1).max(100).default(50),
   offset: z.coerce.number().int().min(0).default(0),
   sort: z.enum(['name_asc', 'name_desc', 'joined_desc']).default('name_asc'),
@@ -80,6 +92,7 @@ export const memberSummarySchema = z.object({
   joinedAt: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),
+  lastVisit: z.string().datetime({ offset: true }).nullable().optional(),
   retentionCategory: z.enum(['LOW', 'MEDIUM', 'HIGH', 'LIMITED']).nullable().optional(),
   retentionScore: z.number().int().min(0).max(100).nullable().optional(),
   currentMembership: z

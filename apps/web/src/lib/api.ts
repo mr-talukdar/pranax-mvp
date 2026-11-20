@@ -89,14 +89,29 @@ export async function fetchDashboardData(options?: {
 export async function fetchMembers(options?: {
   search?: string;
   status?: string;
+  directoryFilter?:
+    | 'all'
+    | 'active'
+    | 'paused'
+    | 'expiring'
+    | 'high_risk'
+    | 'new';
   limit?: number;
   offset?: number;
   sort?: string;
-}): Promise<{ members: MemberSummary[]; total: number; hasMore: boolean }> {
+}): Promise<{
+  members: MemberSummary[];
+  total: number;
+  limit: number;
+  offset: number;
+  hasMore: boolean;
+}> {
   const params = new URLSearchParams();
   if (options?.search) params.set('search', options.search);
   if (options?.status && options.status !== 'all')
     params.set('status', options.status);
+  if (options?.directoryFilter && options.directoryFilter !== 'all')
+    params.set('directoryFilter', options.directoryFilter);
   if (options?.limit) params.set('limit', String(options.limit));
   if (options?.offset) params.set('offset', String(options.offset));
   if (options?.sort) params.set('sort', options.sort);
@@ -145,7 +160,7 @@ export async function fetchMembers(options?: {
         joinedAt: m.joinedAt,
         status,
         planName: m.currentMembership?.planName ?? 'No Active Pass',
-        lastVisit: null,
+        lastVisit: m.lastVisit ?? null,
         cadence: status === 'ACTIVE' ? 'Active Member' : 'Inactive / Paused',
         retentionCategory: m.retentionCategory ?? null,
         retentionScore: m.retentionScore ?? null,
@@ -154,10 +169,13 @@ export async function fetchMembers(options?: {
     },
   );
 
+  const pagination = json.pagination ?? {};
   return {
     members,
-    total: json.pagination?.total ?? members.length,
-    hasMore: json.pagination?.hasMore ?? false,
+    total: pagination.total ?? members.length,
+    limit: pagination.limit ?? options?.limit ?? members.length,
+    offset: pagination.offset ?? options?.offset ?? 0,
+    hasMore: pagination.hasMore ?? false,
   };
 }
 

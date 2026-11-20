@@ -54,6 +54,79 @@ export type MemberDetailRecord = MemberSummary & {
   } | null;
 };
 
+async function getLatestRetentionCategoryMemberIds(
+  tx: Prisma.TransactionClient,
+  studioId: string,
+  category: string,
+): Promise<string[]> {
+  const snapshots = await tx.retentionSnapshot.findMany({
+    where: { studioId },
+    orderBy: [
+      { memberId: 'asc' },
+      { snapshotDate: 'desc' },
+      { createdAt: 'desc' },
+      { id: 'desc' },
+    ],
+    select: {
+      memberId: true,
+      category: true,
+      isComplete: true,
+    },
+  });
+
+  const latestByMember = new Map<
+    string,
+    (typeof snapshots)[number]
+  >();
+  for (const snapshot of snapshots) {
+    if (!latestByMember.has(snapshot.memberId)) {
+      latestByMember.set(snapshot.memberId, snapshot);
+    }
+  }
+
+  return [...latestByMember]
+    .filter(
+      ([, snapshot]) =>
+        snapshot.isComplete && snapshot.category.toUpperCase() === category,
+    )
+    .map(([memberId]) => memberId);
+}
+
+async function getLatestMembershipFilterMemberIds(
+  tx: Prisma.TransactionClient,
+  studioId: string,
+): Promise<string[]> {
+  const periods = await tx.membershipPeriod.findMany({
+    where: { studioId },
+    orderBy: [
+      { memberId: 'asc' },
+      { effectiveEndsAt: 'desc' },
+      { createdAt: 'desc' },
+      { id: 'desc' },
+    ],
+    select: {
+      memberId: true,
+      status: true,
+      plan: { select: { name: true } },
+    },
+  });
+
+  const latestByMember = new Map<string, (typeof periods)[number]>();
+  for (const period of periods) {
+    if (!latestByMember.has(period.memberId)) {
+      latestByMember.set(period.memberId, period);
+    }
+  }
+
+  return [...latestByMember]
+    .filter(
+      ([, period]) =>
+        period.status === 'EXPIRED' ||
+        period.plan.name.toLowerCase().includes('trial'),
+    )
+    .map(([memberId]) => memberId);
+}
+
 export async function listMembers(
   context: StudioContext,
   query: Partial<MemberListQuery> = {},
@@ -71,35 +144,92 @@ export async function listMembers(
       const where: Prisma.MemberWhereInput = {
         studioId: context.studioId,
       };
+      const conditions: Prisma.MemberWhereInput[] = [];
 
       if (search) {
-        where.OR = [
-          { firstName: { contains: search, mode: 'insensitive' } },
-          { lastName: { contains: search, mode: 'insensitive' } },
-          { email: { contains: search, mode: 'insensitive' } },
-          { phone: { contains: search, mode: 'insensitive' } },
-        ];
+        conditions.push({
+          OR: [
+            { firstName: { contains: search, mode: 'insensitive' } },
+            { lastName: { contains: search, mode: 'insensitive' } },
+            { email: { contains: search, mode: 'insensitive' } },
+            { phone: { contains: search, mode: 'insensitive' } },
+          ],
+        });
       }
 
       if (status) {
         if (status === 'ACTIVE') {
-          where.membershipPeriods = { some: { status: 'ACTIVE' } };
+          conditions.push({
+            membershipPeriods: {
+              some: { studioId: context.studioId, status: 'ACTIVE' },
+            },
+          });
         } else if (status === 'PAUSED') {
-          where.membershipPeriods = { some: { status: 'PAUSED' } };
+          conditions.push({
+            membershipPeriods: {
+              some: { studioId: context.studioId, status: 'PAUSED' },
+            },
+          });
         } else if (status === 'EXPIRED') {
-          where.membershipPeriods = {
-            some: { status: 'EXPIRED' },
-            none: { status: { in: ['ACTIVE', 'PAUSED'] } },
-          };
+          conditions.push({
+            membershipPeriods: {
+              some: { studioId: context.studioId, status: 'EXPIRED' },
+              none: {
+                studioId: context.studioId,
+                status: { in: ['ACTIVE', 'PAUSED'] },
+              },
+            },
+          });
         } else if (status === 'CANCELLED') {
-          where.membershipPeriods = {
-            some: { status: 'CANCELLED' },
-            none: { status: { in: ['ACTIVE', 'PAUSED'] } },
-          };
+          conditions.push({
+            membershipPeriods: {
+              some: { studioId: context.studioId, status: 'CANCELLED' },
+              none: {
+                studioId: context.studioId,
+                status: { in: ['ACTIVE', 'PAUSED'] },
+              },
+            },
+          });
         } else if (status === 'NO_MEMBERSHIP') {
-          where.membershipPeriods = { none: {} };
+          conditions.push({ membershipPeriods: { none: { studioId: context.studioId } } });
         }
       }
+
+      const directoryFilter = query.directoryFilter ?? 'all';
+      if (directoryFilter === 'active') {
+        conditions.push({
+          membershipPeriods: {
+            some: { studioId: context.studioId, status: 'ACTIVE' },
+          },
+        });
+      } else if (directoryFilter === 'paused') {
+        conditions.push({
+          membershipPeriods: {
+            some: { studioId: context.studioId, status: 'PAUSED' },
+          },
+        });
+      } else if (directoryFilter === 'expiring') {
+        const memberIds = await getLatestMembershipFilterMemberIds(
+          tx,
+          context.studioId,
+        );
+        conditions.push({ id: { in: memberIds } });
+      } else if (directoryFilter === 'high_risk') {
+        const memberIds = await getLatestRetentionCategoryMemberIds(
+          tx,
+          context.studioId,
+          'HIGH',
+        );
+        conditions.push({ id: { in: memberIds } });
+      } else if (directoryFilter === 'new') {
+        const joinedWithinDays = 14;
+        const joinedAfter = new Date(
+          Date.now() - joinedWithinDays * 24 * 60 * 60 * 1000,
+        );
+        conditions.push({ joinedAt: { gte: joinedAfter } });
+      }
+
+      if (conditions.length > 0) where.AND = conditions;
 
       let orderBy: Prisma.MemberOrderByWithRelationInput[];
       if (sort === 'name_desc') {
@@ -126,6 +256,12 @@ export async function listMembers(
             joinedAt: true,
             createdAt: true,
             updatedAt: true,
+            attendanceRecords: {
+              where: { studioId: context.studioId },
+              orderBy: [{ occurredAt: 'desc' }, { id: 'desc' }],
+              take: 1,
+              select: { occurredAt: true },
+            },
             retentionSnapshots: {
               where: { studioId: context.studioId },
               orderBy: [{ snapshotDate: 'desc' }, { createdAt: 'desc' }],
@@ -176,6 +312,7 @@ export async function listMembers(
           joinedAt: row.joinedAt.toISOString(),
           createdAt: row.createdAt.toISOString(),
           updatedAt: row.updatedAt.toISOString(),
+          lastVisit: row.attendanceRecords[0]?.occurredAt.toISOString() ?? null,
           retentionCategory,
           retentionScore: latestRetention?.score ?? null,
           currentMembership: current

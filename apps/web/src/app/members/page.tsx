@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { AppShell } from '../../components/shell/AppShell';
 import type { MemberSummary } from '../../lib/types';
@@ -13,85 +13,118 @@ type StudioMemberCounts = {
   highRisk: number;
 };
 
+function formatLastVisit(lastVisit: string | null): string {
+  if (!lastVisit) return 'Never';
+  const date = new Date(lastVisit);
+  if (Number.isNaN(date.getTime())) return 'Unavailable';
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(date);
+}
+
 export default function MembersPage() {
   const [members, setMembers] = useState<MemberSummary[]>([]);
   const [memberTotal, setMemberTotal] = useState(0);
+  const [resultsTotal, setResultsTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
   const [studioCounts, setStudioCounts] = useState<StudioMemberCounts | null>(null);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'active' | 'paused' | 'expiring' | 'high_risk' | 'new'>('all');
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(25);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const requestId = useRef(0);
 
-  const loadMembers = () => {
+  const loadMembers = useCallback(() => {
+    const currentRequestId = ++requestId.current;
     setLoading(true);
     setError(null);
-    Promise.all([
-      fetchMembers({ limit: 100 }),
-      fetchDashboardData().catch((dashboardError) => {
-        console.error('Failed to load studio member counts', dashboardError);
-        return null;
-      }),
-    ])
-      .then(([data, dashboard]) => {
+    fetchMembers({
+      search: debouncedSearch,
+      directoryFilter: filter,
+      limit: pageSize,
+      offset: page * pageSize,
+    })
+      .then((data) => {
+        if (currentRequestId !== requestId.current) return;
         setMembers(data.members);
-        setMemberTotal(data.total);
-        if (dashboard) {
-          setStudioCounts({
-            active: dashboard.activeMembers,
-            paused: dashboard.membershipBreakdown.paused,
-            expired: dashboard.membershipBreakdown.expired,
-            highRisk: dashboard.retentionSummary.highCount,
-          });
+        setResultsTotal(data.total);
+        setHasMore(data.hasMore);
+        if (page === 0 && filter === 'all' && !debouncedSearch) {
+          setMemberTotal(data.total);
         }
-        setLoading(false);
       })
       .catch((err) => {
+        if (currentRequestId !== requestId.current) return;
         console.error('Failed to load members', err);
         setError(err instanceof Error ? err.message : 'Failed to load members directory.');
-        setLoading(false);
+      })
+      .finally(() => {
+        if (currentRequestId === requestId.current) setLoading(false);
       });
-  };
+  }, [debouncedSearch, filter, page, pageSize]);
 
   useEffect(() => {
     loadMembers();
+    return () => {
+      requestId.current += 1;
+    };
+  }, [loadMembers]);
+
+  useEffect(() => {
+    const timeout = globalThis.setTimeout(() => {
+      setDebouncedSearch(search.trim());
+    }, 250);
+    return () => globalThis.clearTimeout(timeout);
+  }, [search]);
+
+  useEffect(() => {
+    let isCurrent = true;
+    fetchDashboardData()
+      .then((dashboard) => {
+        if (!isCurrent) return;
+        setMemberTotal(dashboard.totalMembers);
+        setStudioCounts({
+          active: dashboard.activeMembers,
+          paused: dashboard.membershipBreakdown.paused,
+          expired: dashboard.membershipBreakdown.expired,
+          highRisk: dashboard.retentionSummary.highCount,
+        });
+      })
+      .catch((dashboardError) => {
+        console.error('Failed to load studio member counts', dashboardError);
+      });
+    return () => {
+      isCurrent = false;
+    };
   }, []);
 
-  const filteredMembers = useMemo(() => {
-    return members.filter((member) => {
-      const q = search.toLowerCase();
-      const matchesSearch =
-        member.firstName.toLowerCase().includes(q) ||
-        member.lastName.toLowerCase().includes(q) ||
-        (member.email?.toLowerCase().includes(q) ?? false) ||
-        (member.phone?.includes(q) ?? false);
+  const stats = {
+    total: memberTotal,
+    active: studioCounts?.active ?? 0,
+    paused: studioCounts?.paused ?? 0,
+    expired: studioCounts?.expired ?? 0,
+    highRisk: studioCounts?.highRisk ?? 0,
+  };
 
-      if (!matchesSearch) return false;
-
-      if (filter === 'active') return member.status === 'ACTIVE';
-      if (filter === 'paused') return member.status === 'PAUSED';
-      if (filter === 'expiring') return member.planName.toLowerCase().includes('trial') || member.status === 'EXPIRED';
-      if (filter === 'high_risk') return member.retentionCategory === 'HIGH';
-      if (filter === 'new') return member.cadence.toLowerCase().includes('new');
-
-      return true;
-    });
-  }, [members, search, filter]);
-
-  const stats = useMemo(() => {
-    const total = memberTotal;
-    const active = studioCounts?.active ?? members.filter((m) => m.status === 'ACTIVE').length;
-    const paused = studioCounts?.paused ?? members.filter((m) => m.status === 'PAUSED').length;
-    const expired = studioCounts?.expired ?? members.filter((m) => m.status === 'EXPIRED').length;
-    const highRisk = studioCounts?.highRisk ?? members.filter((m) => m.retentionCategory === 'HIGH').length;
-    return { total, active, paused, expired, highRisk };
-  }, [memberTotal, members, studioCounts]);
+  const allCurrentPageSelected =
+    members.length > 0 && members.every((member) => selectedIds.includes(member.id));
+  const totalPages = Math.max(1, Math.ceil(resultsTotal / pageSize));
+  const rangeStart = resultsTotal === 0 ? 0 : page * pageSize + 1;
+  const rangeEnd = Math.min(page * pageSize + members.length, resultsTotal);
 
   const toggleSelectAll = () => {
-    if (selectedIds.length === filteredMembers.length) {
-      setSelectedIds([]);
+    const currentPageIds = new Set(members.map((member) => member.id));
+    if (allCurrentPageSelected) {
+      setSelectedIds((previous) => previous.filter((id) => !currentPageIds.has(id)));
     } else {
-      setSelectedIds(filteredMembers.map((m) => m.id));
+      setSelectedIds((previous) => [
+        ...new Set([...previous, ...currentPageIds]),
+      ]);
     }
   };
 
@@ -172,7 +205,10 @@ export default function MembersPage() {
             <input
               type="text"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(0);
+              }}
               placeholder="Search by name, email, or phone..."
               className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-surface-bright border border-border-delicate text-on-surface font-body-md text-body-md focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all placeholder:text-outline"
             />
@@ -194,7 +230,11 @@ export default function MembersPage() {
                 <button
                   key={key}
                   type="button"
-                  onClick={() => setFilter(key)}
+                    title={key === 'new' ? 'Joined in the last 14 days' : undefined}
+                  onClick={() => {
+                    setFilter(key);
+                    setPage(0);
+                  }}
                   className={`px-3 py-1.5 rounded-lg font-label-md text-label-md font-semibold transition-all ${
                     active
                       ? 'bg-primary text-on-primary shadow-xs'
@@ -226,7 +266,7 @@ export default function MembersPage() {
             <div className="p-12 text-center text-text-muted font-body-md animate-pulse">
               Loading members directory...
             </div>
-          ) : filteredMembers.length === 0 ? (
+          ) : members.length === 0 ? (
             <div className="p-12 text-center flex flex-col items-center justify-center">
               <span className="material-symbols-outlined text-[36px] text-outline mb-2">
                 person_search
@@ -244,7 +284,7 @@ export default function MembersPage() {
                     <th className="py-3 px-4 w-10">
                       <input
                         type="checkbox"
-                        checked={selectedIds.length === filteredMembers.length && filteredMembers.length > 0}
+                        checked={allCurrentPageSelected}
                         onChange={toggleSelectAll}
                         className="rounded text-primary focus:ring-primary cursor-pointer"
                       />
@@ -258,7 +298,7 @@ export default function MembersPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border-delicate font-body-md text-body-md">
-                  {filteredMembers.map((member) => {
+                  {members.map((member) => {
                     const isSelected = selectedIds.includes(member.id);
                     return (
                       <tr
@@ -341,7 +381,7 @@ export default function MembersPage() {
                           )}
                         </td>
                         <td className="py-3.5 px-4 text-on-surface-variant font-body-sm">
-                          {member.lastVisit ?? 'Never'}
+                          {formatLastVisit(member.lastVisit)}
                         </td>
                         <td className="py-3.5 px-4 text-right">
                           <Link
@@ -360,6 +400,51 @@ export default function MembersPage() {
                   })}
                 </tbody>
               </table>
+            </div>
+          )}
+          {!error && !loading && (
+            <div className="flex flex-col gap-3 border-t border-border-delicate px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="font-body-sm text-body-sm text-text-muted">
+                Showing {rangeStart}–{rangeEnd} of {resultsTotal} members
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="flex items-center gap-2 font-body-sm text-body-sm text-on-surface-variant">
+                  Rows per page
+                  <select
+                    value={pageSize}
+                    onChange={(event) => {
+                      setPageSize(Number(event.target.value));
+                      setPage(0);
+                    }}
+                    className="rounded-lg border border-border-delicate bg-surface-container-lowest px-2 py-1.5 text-on-surface focus:border-primary focus:outline-none"
+                  >
+                    {[25, 50, 100].map((size) => (
+                      <option key={size} value={size}>
+                        {size}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <span className="px-2 font-body-sm text-body-sm text-on-surface-variant">
+                  Page {page + 1} of {totalPages}
+                </span>
+                <button
+                  type="button"
+                  disabled={page === 0}
+                  onClick={() => setPage((current) => Math.max(current - 1, 0))}
+                  className="rounded-lg border border-border-delicate px-3 py-1.5 font-label-sm text-label-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  disabled={!hasMore}
+                  onClick={() => setPage((current) => current + 1)}
+                  className="rounded-lg border border-border-delicate px-3 py-1.5 font-label-sm text-label-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </div>
             </div>
           )}
         </div>

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="300" viewBox="0 0 900 300">
+<rect width="900" height="300" fill="#fff"/><text x="40" y="42" font-family="sans-serif" font-size="24" font-weight="bold">Gemini response latency</text>
+<text x="40" y="70" font-family="sans-serif" font-size="14">Production integration unverified · observation 2026-11-20/21 UTC · zero Gemini requests sent</text>
+<rect x="40" y="100" width="820" height="150" rx="12" fill="#f1f3f4"/><text x="450" y="165" text-anchor="middle" font-family="sans-serif" font-size="26" fill="#59636e">NOT MEASURED</text><text x="450" y="198" text-anchor="middle" font-family="sans-serif" font-size="15" fill="#59636e">Model and call pattern are source findings only; token counts and latency unavailable</text>
+</svg>

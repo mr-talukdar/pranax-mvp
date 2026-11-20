@@ -15,12 +15,34 @@ export type AppSession = {
 
 export const AppSessionContext = createContext<AppSession | null>(null);
 
+export type AppSessionStatus = {
+  loading: boolean;
+  error: string | null;
+  refresh: () => void;
+  clear: () => void;
+};
+
+export const AppSessionStatusContext = createContext<AppSessionStatus>({
+  loading: false,
+  error: null,
+  refresh: () => undefined,
+  clear: () => undefined,
+});
+
 export function useAppSession(): AppSession {
   const session = useContext(AppSessionContext);
   if (!session) {
     throw new Error('Workspace session is not available.');
   }
   return session;
+}
+
+export function useOptionalAppSession(): AppSession | null {
+  return useContext(AppSessionContext);
+}
+
+export function useAppSessionStatus(): AppSessionStatus {
+  return useContext(AppSessionStatusContext);
 }
 
 export function getInitials(name: string): string {

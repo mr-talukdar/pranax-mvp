@@ -242,8 +242,16 @@ export default function RetentionPage() {
               No members currently queued for re-engagement triage.
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse font-body-md text-body-md">
+            <div className="w-full overflow-x-auto">
+              <table className="w-full min-w-[980px] table-fixed border-collapse text-left font-body-md text-body-md">
+                <colgroup>
+                  <col className="w-[17%]" />
+                  <col className="w-[10%]" />
+                  <col className="w-[14%]" />
+                  <col className="w-[25%]" />
+                  <col className="w-[22%]" />
+                  <col className="w-[12%]" />
+                </colgroup>
                 <thead>
                   <tr className="border-b border-border-delicate text-on-surface-variant font-label-sm">
                     <th className="py-3 font-semibold">Member</th>
@@ -255,29 +263,29 @@ export default function RetentionPage() {
                     </th>
                     <th className="py-3 font-semibold">Drift Signal</th>
                     <th className="py-3 font-semibold">Primary Recommendation</th>
-                    <th className="py-3 font-semibold text-right">Actions</th>
+                    <th className="py-3 pr-1 text-right font-semibold">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border-delicate">
                   {filteredQueue.map((item) => (
                     <tr key={item.memberId} className="hover:bg-surface-bright">
-                      <td className="py-3.5 pr-4">
+                      <td className="py-3.5 pr-4 align-middle">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-surface-container-high flex items-center justify-center font-bold text-label-md text-on-surface">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-container-high font-bold text-label-md text-on-surface">
                             {item.memberInitials}
                           </div>
                           <Link
                             href={`/members/${item.memberId}`}
-                            className="font-semibold text-on-surface hover:text-primary transition-colors"
+                            className="min-w-0 truncate font-semibold text-on-surface transition-colors hover:text-primary"
                           >
                             {item.memberName}
                           </Link>
                         </div>
                       </td>
-                      <td className="py-3.5 pr-4 text-on-surface-variant">{item.planName}</td>
-                      <td className="py-3.5 pr-4">
+                      <td className="py-3.5 pr-4 align-middle text-on-surface-variant">{item.planName}</td>
+                      <td className="py-3.5 pr-4 align-middle">
                         <span
-                          className={`px-2.5 py-0.5 rounded-full font-label-sm text-label-sm font-semibold inline-flex items-center gap-1 ${
+                          className={`inline-flex max-w-full items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 font-label-sm text-label-sm font-semibold ${
                             item.category === 'HIGH'
                               ? 'bg-rose-tint text-rose-soft'
                               : 'bg-surface-container text-tertiary'
@@ -287,15 +295,15 @@ export default function RetentionPage() {
                           {item.category} ({item.score}/100)
                         </span>
                       </td>
-                      <td className="py-3.5 pr-4 text-text-muted font-body-sm">{item.cadenceDrop}</td>
-                      <td className="py-3.5 pr-4 text-on-surface font-body-sm max-w-sm">
+                      <td className="py-3.5 pr-4 align-middle font-body-sm text-text-muted break-words">{item.cadenceDrop}</td>
+                      <td className="max-w-sm break-words py-3.5 pr-4 align-middle font-body-sm text-on-surface">
                         {item.primaryRecommendation}
                       </td>
-                      <td className="py-3.5 text-right">
+                      <td className="whitespace-nowrap py-3.5 pl-1 pr-1 text-right align-middle">
                         <Link
                           href={`/members/${item.memberId}`}
                           aria-label={`Review ${item.memberName}'s retention profile`}
-                          className="px-3.5 py-1.5 rounded-xl bg-primary text-on-primary font-label-sm text-label-sm font-semibold hover:bg-primary-container shadow-xs transition-all"
+                          className="inline-flex items-center justify-center whitespace-nowrap rounded-xl bg-primary px-2.5 py-1.5 font-label-sm text-label-sm font-semibold text-on-primary shadow-xs transition-all hover:bg-primary-container"
                         >
                           Review Profile
                         </Link>

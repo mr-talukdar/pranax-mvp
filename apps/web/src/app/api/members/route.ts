@@ -21,6 +21,7 @@ export async function GET(request: Request) {
   const queryParse = memberListQuerySchema.safeParse({
     search: searchParams.get('search') || undefined,
     status: searchParams.get('status') || undefined,
+    directoryFilter: searchParams.get('directoryFilter') || undefined,
     limit: searchParams.get('limit') || undefined,
     offset: searchParams.get('offset') || undefined,
     sort: searchParams.get('sort') || undefined,

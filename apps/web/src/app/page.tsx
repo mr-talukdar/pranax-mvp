@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { BrandLogo } from '../components/brand/BrandLogo';
 
 export const metadata = {
   title: 'PranaX — Studio operations and retention clarity',
@@ -36,16 +37,10 @@ export default function LandingPage() {
           className="flex items-center gap-3"
           aria-label="PranaX home"
         >
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0757d5] text-lg font-extrabold text-white shadow-lg shadow-blue-900/15">
-            P
-          </span>
-          <span>
-            <span className="block text-lg font-bold leading-tight tracking-tight">
-              PranaX
-            </span>
-            <span className="block text-xs font-medium text-slate-500">
-              Fitness Business OS
-            </span>
+          <BrandLogo className="h-[54px] w-[138px] sm:h-[60px] sm:w-[154px]" />
+          <span className="hidden flex-col justify-center self-center border-l border-slate-200 pl-3 text-[10px] font-semibold uppercase leading-4 tracking-[0.14em] text-slate-500 sm:flex">
+            <span>Fitness</span>
+            <span>Business OS</span>
           </span>
         </Link>
         <nav
@@ -328,8 +323,9 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <footer className="border-t border-slate-200 bg-white px-5 py-6 text-center text-xs text-slate-500 sm:px-8">
-        PranaX · Fitness Business OS for boutique studios
+      <footer className="flex flex-col items-center gap-3 border-t border-slate-200 bg-white px-5 py-7 text-center text-xs text-slate-500 sm:px-8">
+        <BrandLogo className="h-[47px] w-[120px]" />
+        <span>PranaX · Fitness Business OS for boutique studios</span>
       </footer>
     </main>
   );
