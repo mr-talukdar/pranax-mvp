@@ -16,6 +16,7 @@ import {
 } from '@pranax/contracts';
 import type { StudioContext } from '../auth/context';
 import { assessRetention } from './intelligence';
+import { enrichRetentionRecommendation } from './retentionRecommendation';
 
 /** Provisional, code-configurable MVP threshold: a score shift of at least 10 points. */
 export const RETENTION_SIGNIFICANT_SCORE_DELTA = 10;
@@ -361,6 +362,7 @@ function databaseDate(date: Date): string {
 export async function assessMemberRetention(
   context: StudioContext,
   memberId: string,
+  asOfDate?: string,
 ): Promise<RetentionAssessmentOutput | null> {
   const evidence = await withVerifiedStudioContext(
     context.authUserId,
@@ -411,7 +413,7 @@ export async function assessMemberRetention(
   if (!evidence) return null;
 
   const now = new Date();
-  const assessmentDate = localDate(now, evidence.studio.timezone);
+  const assessmentDate = asOfDate ?? localDate(now, evidence.studio.timezone);
   const coverageStart = evidence.studio.settings?.attendanceCoverageFrom;
   const coverageVerifiedAt = evidence.studio.settings?.coverageVerifiedAt;
   const verifiedThrough = coverageVerifiedAt
@@ -456,7 +458,8 @@ export async function assessMemberRetention(
       })),
     ),
   };
-  return assessRetention(context, payload);
+  const rawAssessment = await assessRetention(context, payload);
+  return enrichRetentionRecommendation(rawAssessment);
 }
 
 /** Returns immutable member history in ascending assessment order and verified tenant scope. */

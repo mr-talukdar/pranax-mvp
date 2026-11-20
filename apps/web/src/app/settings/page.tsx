@@ -2,12 +2,12 @@
 
 import { useState, type FormEvent } from 'react';
 import { AppShell } from '../../components/shell/AppShell';
-import { mockStudioContext } from '../../lib/mockData';
+import { TARGET_STUDIO } from '../../lib/constants';
 
 export default function SettingsPage() {
-  const [name, setName] = useState(mockStudioContext.name);
-  const [branch, setBranch] = useState(mockStudioContext.branch);
-  const [timezone, setTimezone] = useState(mockStudioContext.timezone);
+  const [name, setName] = useState<string>(TARGET_STUDIO.name);
+  const [branch, setBranch] = useState<string>(TARGET_STUDIO.branch);
+  const [timezone, setTimezone] = useState<string>(TARGET_STUDIO.timezone);
   const [saved, setSaved] = useState(false);
 
   const handleSave = (e: FormEvent) => {
@@ -19,13 +19,26 @@ export default function SettingsPage() {
   return (
     <AppShell title="Studio Settings">
       <div className="flex flex-col w-full max-w-4xl mx-auto gap-space-lg">
-        <div>
-          <h1 className="font-headline-lg text-headline-lg text-on-surface font-bold tracking-tight">
-            Studio Settings
-          </h1>
-          <p className="font-body-md text-body-md text-on-surface-variant mt-1">
-            Configure studio brand profile, operating timezone, and attendance coverage rules.
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-3">
+              <h1 className="font-headline-lg text-headline-lg text-on-surface font-bold tracking-tight">
+                Studio Settings
+              </h1>
+              {TARGET_STUDIO.isSynthetic && (
+                <span className="px-2.5 py-0.5 rounded-full bg-sage-tint border border-sage-border text-secondary font-label-sm text-label-sm font-semibold flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-secondary" />
+                  Synthetic Pilot Studio
+                </span>
+              )}
+            </div>
+            <p className="font-body-md text-body-md text-on-surface-variant mt-1">
+              Configure studio brand profile, operating timezone, and attendance coverage rules.
+            </p>
+          </div>
+          <span className="px-3 py-1 rounded-xl bg-surface-container border border-border-delicate font-mono text-label-sm text-on-surface-variant">
+            ID: {TARGET_STUDIO.id.slice(0, 18)}...
+          </span>
         </div>
 
         {saved && (

@@ -1,14 +1,47 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { AppShell } from '../../components/shell/AppShell';
-import { mockDashboardKPIs } from '../../lib/mockData';
+import type { DashboardKPIs } from '../../lib/types';
+import { fetchDashboardData } from '../../lib/api';
 
 export default function RetentionPage() {
   const [filter, setFilter] = useState<'all' | 'high' | 'medium' | 'limited'>('all');
-  const queue = mockDashboardKPIs.attentionQueue;
-  const summary = mockDashboardKPIs.retentionSummary;
+  const [data, setData] = useState<DashboardKPIs | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadData = () => {
+    setLoading(true);
+    setError(null);
+    fetchDashboardData()
+      .then((res) => {
+        setData(res);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error('Failed to load retention data', err);
+        setError(err instanceof Error ? err.message : 'Failed to load retention analytics.');
+        setLoading(false);
+      });
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const queue = data?.attentionQueue ?? [];
+  const summary = data?.retentionSummary ?? {
+    lowCount: 0,
+    lowPercent: 0,
+    mediumCount: 0,
+    mediumPercent: 0,
+    highCount: 0,
+    highPercent: 0,
+    limitedCount: 0,
+    limitedPercent: 0,
+  };
 
   const filteredQueue = queue.filter((item) => {
     if (filter === 'high') return item.category === 'HIGH';
@@ -37,6 +70,22 @@ export default function RetentionPage() {
             </p>
           </div>
         </div>
+
+        {error && (
+          <div className="w-full bg-error-container text-on-error-container p-space-lg rounded-xl flex items-center justify-between shadow-xs">
+            <div className="flex items-center gap-3">
+              <span className="material-symbols-outlined text-[24px]">cloud_off</span>
+              <p className="font-headline-sm text-headline-sm font-bold">{error}</p>
+            </div>
+            <button
+              type="button"
+              onClick={loadData}
+              className="px-4 py-2 rounded-lg bg-error text-on-error font-label-md text-label-md font-semibold hover:opacity-95 shadow-xs"
+            >
+              Retry
+            </button>
+          </div>
+        )}
 
         {/* 4 Retention Distribution Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-space-md">
@@ -184,64 +233,74 @@ export default function RetentionPage() {
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse font-body-md text-body-md">
-              <thead>
-                <tr className="border-b border-border-delicate text-on-surface-variant font-label-sm">
-                  <th className="py-3 font-semibold">Member</th>
-                  <th className="py-3 font-semibold">Plan</th>
-                  <th className="py-3 font-semibold">Triage Score</th>
-                  <th className="py-3 font-semibold">Drift Signal</th>
-                  <th className="py-3 font-semibold">Primary Recommendation</th>
-                  <th className="py-3 font-semibold text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border-delicate">
-                {filteredQueue.map((item) => (
-                  <tr key={item.memberId} className="hover:bg-surface-bright">
-                    <td className="py-3.5 pr-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-surface-container-high flex items-center justify-center font-bold text-label-md text-on-surface">
-                          {item.memberInitials}
+          {loading ? (
+            <div className="p-12 text-center text-text-muted font-body-md animate-pulse">
+              Computing attention queue from studio telemetries...
+            </div>
+          ) : filteredQueue.length === 0 ? (
+            <div className="p-12 text-center text-text-muted font-body-md">
+              No members currently queued for re-engagement triage.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse font-body-md text-body-md">
+                <thead>
+                  <tr className="border-b border-border-delicate text-on-surface-variant font-label-sm">
+                    <th className="py-3 font-semibold">Member</th>
+                    <th className="py-3 font-semibold">Plan</th>
+                    <th className="py-3 font-semibold">Triage Score</th>
+                    <th className="py-3 font-semibold">Drift Signal</th>
+                    <th className="py-3 font-semibold">Primary Recommendation</th>
+                    <th className="py-3 font-semibold text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border-delicate">
+                  {filteredQueue.map((item) => (
+                    <tr key={item.memberId} className="hover:bg-surface-bright">
+                      <td className="py-3.5 pr-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-surface-container-high flex items-center justify-center font-bold text-label-md text-on-surface">
+                            {item.memberInitials}
+                          </div>
+                          <Link
+                            href={`/members/${item.memberId}`}
+                            className="font-semibold text-on-surface hover:text-primary transition-colors"
+                          >
+                            {item.memberName}
+                          </Link>
                         </div>
+                      </td>
+                      <td className="py-3.5 pr-4 text-on-surface-variant">{item.planName}</td>
+                      <td className="py-3.5 pr-4">
+                        <span
+                          className={`px-2.5 py-0.5 rounded-full font-label-sm text-label-sm font-semibold inline-flex items-center gap-1 ${
+                            item.category === 'HIGH'
+                              ? 'bg-rose-tint text-rose-soft'
+                              : 'bg-surface-container text-tertiary'
+                          }`}
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                          {item.category} ({item.score})
+                        </span>
+                      </td>
+                      <td className="py-3.5 pr-4 text-text-muted font-body-sm">{item.cadenceDrop}</td>
+                      <td className="py-3.5 pr-4 text-on-surface font-body-sm max-w-sm">
+                        {item.primaryRecommendation}
+                      </td>
+                      <td className="py-3.5 text-right">
                         <Link
                           href={`/members/${item.memberId}`}
-                          className="font-semibold text-on-surface hover:text-primary transition-colors"
+                          className="px-3.5 py-1.5 rounded-xl bg-primary text-on-primary font-label-sm text-label-sm font-semibold hover:bg-primary-container shadow-xs transition-all"
                         >
-                          {item.memberName}
+                          Review Profile
                         </Link>
-                      </div>
-                    </td>
-                    <td className="py-3.5 pr-4 text-on-surface-variant">{item.planName}</td>
-                    <td className="py-3.5 pr-4">
-                      <span
-                        className={`px-2.5 py-0.5 rounded-full font-label-sm text-label-sm font-semibold inline-flex items-center gap-1 ${
-                          item.category === 'HIGH'
-                            ? 'bg-rose-tint text-rose-soft'
-                            : 'bg-surface-container text-tertiary'
-                        }`}
-                      >
-                        <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                        {item.category} ({item.score})
-                      </span>
-                    </td>
-                    <td className="py-3.5 pr-4 text-text-muted font-body-sm">{item.cadenceDrop}</td>
-                    <td className="py-3.5 pr-4 text-on-surface font-body-sm max-w-sm">
-                      {item.primaryRecommendation}
-                    </td>
-                    <td className="py-3.5 text-right">
-                      <Link
-                        href={`/members/${item.memberId}`}
-                        className="px-3.5 py-1.5 rounded-xl bg-primary text-on-primary font-label-sm text-label-sm font-semibold hover:bg-primary-container shadow-xs transition-all"
-                      >
-                        Review Profile
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
     </AppShell>

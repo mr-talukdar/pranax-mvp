@@ -3,69 +3,270 @@ import type {
   MemberSummary,
   DashboardKPIs,
   AttendanceItem,
+  MembershipStatusType,
 } from './types';
-import {
-  mockMembers,
-  mockDashboardKPIs,
-  mockAttendanceRecords,
-  mockStudioContext,
-} from './mockData';
+import { TARGET_STUDIO } from './constants';
 
-export async function fetchMembers(): Promise<MemberSummary[]> {
-  try {
-    const res = await globalThis.fetch('/api/members', {
-      headers: {
-        'x-studio-id': mockStudioContext.id,
-      },
-      cache: 'no-store',
-    });
-    if (res.ok) {
-      const json = await res.json();
-      if (Array.isArray(json.data) && json.data.length > 0) {
-        // Merge with mock details for rich UI display if basic fields returned
-        return json.data.map((m: { id: string; firstName: string; lastName: string; email: string | null; phone: string | null }) => {
-          const match = mockMembers.find((mock) => mock.id === m.id);
-          return {
-            id: m.id,
-            firstName: m.firstName,
-            lastName: m.lastName,
-            email: m.email,
-            phone: m.phone,
-            joinedAt: match?.joinedAt ?? new Date().toISOString(),
-            status: match?.status ?? 'ACTIVE',
-            planName: match?.planName ?? 'Standard Membership',
-            lastVisit: match?.lastVisit ?? 'Recent',
-            cadence: match?.cadence ?? '1-2x / week',
-            retentionCategory: match?.retentionCategory ?? 'LOW',
-            retentionScore: match?.retentionScore ?? 20,
-            avatarBg: match?.avatarBg ?? 'bg-primary',
-          };
-        });
-      }
-    }
-  } catch (error) {
-    console.warn('Backend /api/members unavailable, using mock data adapter', error);
+type ApiMemberRow = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string | null;
+  phone: string | null;
+  joinedAt: string;
+  currentMembership?: {
+    id: string;
+    planId: string;
+    planName: string;
+    status: string;
+    startsAt: string;
+    effectiveEndsAt: string;
+  } | null;
+  lastVisit?: string | null;
+  retentionCategory?: 'LOW' | 'MEDIUM' | 'HIGH' | 'LIMITED' | null;
+  retentionScore?: number | null;
+};
+
+type ApiPauseRow = {
+  id?: string;
+  startsAt: string;
+  resumesAt?: string | null;
+};
+
+type ApiAttendanceRow = {
+  id: string;
+  memberId: string;
+  memberName: string;
+  memberEmail?: string | null;
+  occurredAt: string;
+  source?: 'MANUAL' | 'CSV';
+};
+
+let cachedToken: string | null = null;
+let sessionPromise: Promise<string | null> | null = null;
+
+export async function ensureAuth(): Promise<string | null> {
+  if (typeof window === 'undefined') {
+    return null;
   }
-  return mockMembers;
+  if (cachedToken) {
+    return cachedToken;
+  }
+  if (!sessionPromise) {
+    sessionPromise = (async () => {
+      try {
+        const res = await globalThis.fetch('/api/auth/demo-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        if (res.ok) {
+          const json = await res.json();
+          cachedToken = json.data?.accessToken ?? null;
+          return cachedToken;
+        }
+      } catch (err) {
+        console.error('Failed to initialize demo auth session', err);
+      } finally {
+        sessionPromise = null;
+      }
+      return null;
+    })();
+  }
+  return sessionPromise;
 }
 
-export async function fetchMemberById(id: string): Promise<MemberDetail | undefined> {
-  const members = await fetchMembers();
-  const summary = members.find((m) => m.id === id);
-  if (!summary) return mockMembers[0]; // fallback for demo routing
-  const fullMock = mockMembers.find((m) => m.id === id);
+export async function getAuthHeaders(extraHeaders: Record<string, string> = {}): Promise<Record<string, string>> {
+  const token = await ensureAuth();
+  const headers: Record<string, string> = {
+    'x-studio-id': TARGET_STUDIO.id,
+    ...extraHeaders,
+  };
+  if (token) {
+    headers.authorization = `Bearer ${token}`;
+  }
+  return headers;
+}
+
+export async function fetchDashboardData(options?: {
+  asOfDate?: string;
+  studioId?: string;
+}): Promise<DashboardKPIs> {
+  const studioId = options?.studioId ?? TARGET_STUDIO.id;
+  const queryStr = options?.asOfDate
+    ? `?asOfDate=${encodeURIComponent(options.asOfDate)}`
+    : '';
+
+  const headers = await getAuthHeaders();
+  headers['x-studio-id'] = studioId;
+
+  const res = await globalThis.fetch(`/api/dashboard${queryStr}`, {
+    headers,
+    cache: 'no-store',
+  });
+
+  if (!res.ok) {
+    const errorJson = await res.json().catch(() => ({}));
+    throw new Error(
+      errorJson.error || `Failed to fetch dashboard metrics (Status: ${res.status})`,
+    );
+  }
+
+  const json = await res.json();
+  if (!json.data) {
+    throw new Error('No dashboard data received from server');
+  }
+
+  return json.data as DashboardKPIs;
+}
+
+export async function fetchMembers(options?: {
+  search?: string;
+  status?: string;
+  limit?: number;
+  offset?: number;
+  sort?: string;
+}): Promise<{ members: MemberSummary[]; total: number; hasMore: boolean }> {
+  const params = new URLSearchParams();
+  if (options?.search) params.set('search', options.search);
+  if (options?.status && options.status !== 'all') params.set('status', options.status);
+  if (options?.limit) params.set('limit', String(options.limit));
+  if (options?.offset) params.set('offset', String(options.offset));
+  if (options?.sort) params.set('sort', options.sort);
+
+  const query = params.toString() ? `?${params.toString()}` : '';
+  const headers = await getAuthHeaders();
+
+  const res = await globalThis.fetch(`/api/members${query}`, {
+    headers,
+    cache: 'no-store',
+  });
+
+  if (!res.ok) {
+    const errorJson = await res.json().catch(() => ({}));
+    throw new Error(
+      errorJson.error || `Failed to fetch members (Status: ${res.status})`,
+    );
+  }
+
+  const json = await res.json();
+  const avatarBgs = [
+    'bg-primary',
+    'bg-secondary',
+    'bg-tertiary',
+    'bg-emerald-600',
+    'bg-indigo-600',
+    'bg-teal-600',
+  ];
+
+  const members: MemberSummary[] = (json.data ?? []).map((m: ApiMemberRow, index: number) => {
+    const rawStatus = m.currentMembership?.status ?? 'EXPIRED';
+    const status: MembershipStatusType =
+      rawStatus === 'ACTIVE' || rawStatus === 'PAUSED' || rawStatus === 'CANCELLED'
+        ? rawStatus
+        : 'EXPIRED';
+
+    return {
+      id: m.id,
+      firstName: m.firstName,
+      lastName: m.lastName,
+      email: m.email,
+      phone: m.phone,
+      joinedAt: m.joinedAt,
+      status,
+      planName: m.currentMembership?.planName ?? 'No Active Pass',
+      lastVisit: null,
+      cadence: status === 'ACTIVE' ? 'Active Member' : 'Inactive / Paused',
+      retentionCategory: null,
+      retentionScore: null,
+      avatarBg: avatarBgs[index % avatarBgs.length],
+    };
+  });
+
   return {
-    ...summary,
-    emergencyContact: fullMock?.emergencyContact,
-    notes: fullMock?.notes,
-    membership: fullMock?.membership ?? {
-      planId: 'plan-default',
-      planName: summary.planName,
-      startsAt: '2026-06-01',
-      endsAt: '2026-06-30',
-      priceCents: 1000000,
-      status: summary.status,
-      renewalDueDays: 14,
+    members,
+    total: json.pagination?.total ?? members.length,
+    hasMore: json.pagination?.hasMore ?? false,
+  };
+}
+
+export async function fetchMemberById(id: string): Promise<MemberDetail> {
+  const headers = await getAuthHeaders();
+
+  const [memberRes, membershipsRes, attendanceRes, retentionRes] = await Promise.all([
+    globalThis.fetch(`/api/members/${id}`, { headers, cache: 'no-store' }),
+    globalThis.fetch(`/api/members/${id}/memberships`, { headers, cache: 'no-store' }).catch(() => null),
+    globalThis.fetch(`/api/members/${id}/attendance`, { headers, cache: 'no-store' }).catch(() => null),
+    globalThis.fetch(`/api/members/${id}/retention`, { headers, cache: 'no-store' }).catch(() => null),
+  ]);
+
+  if (!memberRes.ok) {
+    const err = await memberRes.json().catch(() => ({}));
+    throw new Error(err.error || `Failed to load member profile (Status: ${memberRes.status})`);
+  }
+
+  const memberJson = await memberRes.json();
+  const m = memberJson.data;
+
+  const membershipsJson = membershipsRes && membershipsRes.ok ? await membershipsRes.json() : { data: [] };
+  const history = Array.isArray(membershipsJson.data) ? membershipsJson.data : [];
+
+  const retentionJson = retentionRes && retentionRes.ok ? await retentionRes.json() : null;
+  const retentionData = retentionJson?.data;
+
+  const attendanceJson = attendanceRes && attendanceRes.ok ? await attendanceRes.json() : { data: [] };
+  const attendanceList = Array.isArray(attendanceJson.data) ? attendanceJson.data : [];
+
+  const primaryPeriod = m.currentMembership ?? history[0];
+  const rawStatus = primaryPeriod?.status ?? 'EXPIRED';
+  const status: MembershipStatusType =
+    rawStatus === 'ACTIVE' || rawStatus === 'PAUSED' || rawStatus === 'CANCELLED'
+      ? rawStatus
+      : 'EXPIRED';
+
+  const pauseHistory = Array.isArray(primaryPeriod?.pauses)
+    ? primaryPeriod.pauses.map((p: ApiPauseRow) => ({
+        startDate: p.startsAt?.slice(0, 10) ?? '',
+        endDate: p.resumesAt?.slice(0, 10) ?? null,
+        reason: 'Temporary pause',
+      }))
+    : [];
+
+  let renewalDueDays: number | undefined;
+  if (primaryPeriod?.effectiveEndsAt) {
+    const end = new Date(primaryPeriod.effectiveEndsAt).getTime();
+    const now = Date.now();
+    renewalDueDays = Math.ceil((end - now) / 86_400_000);
+  }
+
+  return {
+    id: m.id,
+    firstName: m.firstName,
+    lastName: m.lastName,
+    email: m.email,
+    phone: m.phone,
+    joinedAt: m.joinedAt,
+    status,
+    planName: primaryPeriod?.planName ?? 'No Active Plan',
+    lastVisit: attendanceList[0]?.occurredAt ?? null,
+    cadence: m.metrics?.attendanceCount30d
+      ? `${m.metrics.attendanceCount30d} visits / 30d`
+      : 'Standard Cadence',
+    retentionCategory: retentionData?.category ?? null,
+    retentionScore: retentionData?.score ?? null,
+    avatarBg: 'bg-primary',
+    emergencyContact: undefined,
+    notes: m.notes ?? undefined,
+    membership: {
+      planId: primaryPeriod?.planId ?? primaryPeriod?.id ?? 'default-plan',
+      planName: primaryPeriod?.planName ?? 'No Active Plan',
+      startsAt: primaryPeriod?.startsAt ? primaryPeriod.startsAt.slice(0, 10) : '2026-01-01',
+      endsAt: primaryPeriod?.effectiveEndsAt
+        ? primaryPeriod.effectiveEndsAt.slice(0, 10)
+        : primaryPeriod?.originalEndsAt?.slice(0, 10) ?? '2026-12-31',
+      priceCents: primaryPeriod?.priceCents ?? 1000000,
+      status,
+      renewalDueDays,
+      pauseHistory,
     },
   };
 }
@@ -76,75 +277,217 @@ export async function createMemberApi(data: {
   email?: string;
   phone?: string;
 }): Promise<{ id: string; firstName: string; lastName: string }> {
-  try {
-    const res = await globalThis.fetch('/api/members', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-studio-id': mockStudioContext.id,
-      },
-      body: JSON.stringify(data),
-    });
-    if (res.ok) {
-      const json = await res.json();
-      return json.data;
-    }
-  } catch (error) {
-    console.warn('Failed to call real member create, simulating success', error);
+  const headers = await getAuthHeaders({ 'Content-Type': 'application/json' });
+
+  const res = await globalThis.fetch('/api/members', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    const errorJson = await res.json().catch(() => ({}));
+    throw new Error(errorJson.error || `Failed to create member (Status: ${res.status})`);
   }
+
+  const json = await res.json();
+  return json.data;
+}
+
+export async function pauseMembershipApi(
+  memberId: string,
+  periodId: string,
+  data: { startsAt?: string; resumesAt?: string },
+): Promise<Record<string, unknown>> {
+  const headers = await getAuthHeaders({ 'Content-Type': 'application/json' });
+
+  const res = await globalThis.fetch(
+    `/api/members/${memberId}/memberships/${periodId}/pause`,
+    {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(data),
+    },
+  );
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `Failed to pause membership (${res.status})`);
+  }
+
+  return res.json();
+}
+
+export async function resumeMembershipApi(
+  memberId: string,
+  periodId: string,
+  data?: { resumesAt?: string },
+): Promise<Record<string, unknown>> {
+  const headers = await getAuthHeaders({ 'Content-Type': 'application/json' });
+
+  const res = await globalThis.fetch(
+    `/api/members/${memberId}/memberships/${periodId}/resume`,
+    {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(data ?? {}),
+    },
+  );
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `Failed to resume membership (${res.status})`);
+  }
+
+  return res.json();
+}
+
+export async function renewMembershipApi(
+  memberId: string,
+  periodId: string,
+  data?: { planId?: string; startsAt?: string },
+): Promise<Record<string, unknown>> {
+  const headers = await getAuthHeaders({ 'Content-Type': 'application/json' });
+
+  const res = await globalThis.fetch(
+    `/api/members/${memberId}/memberships/${periodId}/renew`,
+    {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(data ?? {}),
+    },
+  );
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `Failed to renew membership (${res.status})`);
+  }
+
+  return res.json();
+}
+
+export async function cancelMembershipApi(
+  memberId: string,
+  periodId: string,
+  data?: { effectiveEndsAt?: string; reason?: string },
+): Promise<Record<string, unknown>> {
+  const headers = await getAuthHeaders({ 'Content-Type': 'application/json' });
+
+  const res = await globalThis.fetch(
+    `/api/members/${memberId}/memberships/${periodId}/cancel`,
+    {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(data ?? {}),
+    },
+  );
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `Failed to cancel membership (${res.status})`);
+  }
+
+  return res.json();
+}
+
+export async function fetchAttendanceRecords(options?: {
+  startDate?: string;
+  endDate?: string;
+  limit?: number;
+  offset?: number;
+  memberId?: string;
+}): Promise<{ records: AttendanceItem[]; total: number }> {
+  const params = new URLSearchParams();
+  if (options?.startDate) params.set('startDate', options.startDate);
+  if (options?.endDate) params.set('endDate', options.endDate);
+  if (options?.limit) params.set('limit', String(options.limit));
+  if (options?.offset) params.set('offset', String(options.offset));
+  if (options?.memberId) params.set('memberId', options.memberId);
+
+  const query = params.toString() ? `?${params.toString()}` : '';
+  const headers = await getAuthHeaders();
+
+  const res = await globalThis.fetch(`/api/attendance${query}`, {
+    headers,
+    cache: 'no-store',
+  });
+
+  if (!res.ok) {
+    const errorJson = await res.json().catch(() => ({}));
+    throw new Error(
+      errorJson.error || `Failed to fetch attendance records (${res.status})`,
+    );
+  }
+
+  const json = await res.json();
+  const records: AttendanceItem[] = (json.data ?? []).map((r: ApiAttendanceRow) => ({
+    id: r.id,
+    memberId: r.memberId,
+    memberName: r.memberName,
+    memberEmail: r.memberEmail ?? undefined,
+    checkedInAt: r.occurredAt,
+    classType: 'Pilates Studio Session',
+    instructor: 'Studio Instructor',
+    source: r.source ?? 'MANUAL',
+    terminal: 'Front Kiosk Console',
+  }));
+
   return {
-    id: `temp-${Date.now()}`,
-    firstName: data.firstName,
-    lastName: data.lastName,
+    records,
+    total: json.pagination?.total ?? records.length,
   };
 }
 
-export async function fetchMemberRetention(memberId: string) {
-  try {
-    const res = await globalThis.fetch(`/api/members/${memberId}/retention`, {
-      headers: {
-        'x-studio-id': mockStudioContext.id,
-      },
-      cache: 'no-store',
-    });
-    if (res.ok) {
-      return await res.json();
-    }
-  } catch {
-    // fallback to mock response
+export async function recordCheckInApi(data: {
+  memberId: string;
+  occurredAt?: string;
+}): Promise<{
+  attendanceId: string;
+  memberId: string;
+  alreadyCheckedIn: boolean;
+  warning?: { status: string; message: string } | null;
+}> {
+  const headers = await getAuthHeaders({ 'Content-Type': 'application/json' });
+
+  const res = await globalThis.fetch('/api/attendance/check-in', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    const errorJson = await res.json().catch(() => ({}));
+    throw new Error(errorJson.error || `Failed to record check-in (${res.status})`);
   }
-  return null;
+
+  const json = await res.json();
+  return json.data;
 }
 
-export async function fetchDashboardData(options?: {
-  asOfDate?: string;
-  studioId?: string;
-}): Promise<DashboardKPIs> {
-  try {
-    const studioId = options?.studioId ?? mockStudioContext.id;
-    const queryStr = options?.asOfDate
-      ? `?asOfDate=${encodeURIComponent(options.asOfDate)}`
-      : '';
+export async function importAttendanceCsvApi(
+  payload: { csvContent: string; sourceName?: string; idempotencyKey?: string } | FormData,
+): Promise<{
+  batchId: string;
+  totalRows: number;
+  importedCount: number;
+  errorCount: number;
+  duplicateCount: number;
+  errors: Array<{ rowNumber: number; reason: string }>;
+}> {
+  const isFormData = typeof FormData !== 'undefined' && payload instanceof FormData;
+  const headers = await getAuthHeaders(isFormData ? {} : { 'Content-Type': 'application/json' });
 
-    const res = await globalThis.fetch(`/api/dashboard${queryStr}`, {
-      headers: {
-        'x-studio-id': studioId,
-      },
-      cache: 'no-store',
-    });
+  const res = await globalThis.fetch('/api/attendance/import', {
+    method: 'POST',
+    headers,
+    body: isFormData ? payload : JSON.stringify(payload),
+  });
 
-    if (res.ok) {
-      const json = await res.json();
-      if (json.data) {
-        return json.data;
-      }
-    }
-  } catch (error) {
-    console.warn('Backend /api/dashboard unavailable, using mock data fallback', error);
+  if (!res.ok) {
+    const errorJson = await res.json().catch(() => ({}));
+    throw new Error(errorJson.error || `Failed to import CSV (${res.status})`);
   }
-  return mockDashboardKPIs;
-}
 
-export async function fetchAttendanceRecords(): Promise<AttendanceItem[]> {
-  return mockAttendanceRecords;
+  const json = await res.json();
+  return json.data;
 }

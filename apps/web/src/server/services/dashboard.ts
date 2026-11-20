@@ -361,8 +361,16 @@ export async function getDashboardSummary(
             }
           }
 
+          const metadata = snapshot.assessmentMetadata as {
+            recommendation?: { title?: string; explanation?: string };
+          } | null;
+          if (metadata?.recommendation?.explanation && keyFactors.length < 3) {
+            keyFactors.push(metadata.recommendation.explanation);
+          }
+
           const primaryRecommendation =
             snapshot.recommendation ||
+            metadata?.recommendation?.title ||
             'Direct check-in with member to assess satisfaction and schedule a session';
 
           const queueCategory: 'HIGH' | 'MEDIUM' | 'LIMITED' =
@@ -453,5 +461,6 @@ export async function getDashboardSummary(
         mlInsights,
       };
     },
+    { timeout: 60_000 },
   );
 }

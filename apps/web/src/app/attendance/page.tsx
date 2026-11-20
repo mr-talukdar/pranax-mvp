@@ -1,53 +1,83 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { AppShell } from '../../components/shell/AppShell';
-import type { AttendanceItem } from '../../lib/types';
-import { mockAttendanceRecords, mockMembers } from '../../lib/mockData';
+import type { AttendanceItem, MemberSummary } from '../../lib/types';
+import { fetchAttendanceRecords, fetchMembers, recordCheckInApi } from '../../lib/api';
 
 export default function AttendancePage() {
   const [viewMode, setViewMode] = useState<'live' | 'history'>('live');
-  const [records, setRecords] = useState<AttendanceItem[]>(mockAttendanceRecords);
+  const [records, setRecords] = useState<AttendanceItem[]>([]);
+  const [members, setMembers] = useState<MemberSummary[]>([]);
   const [searchMember, setSearchMember] = useState('');
   const [selectedClass, setSelectedClass] = useState('Advanced Reformer Flow (09:30 AM)');
   const [selectedInstructor, setSelectedInstructor] = useState('Ritu Sen');
   const [filterDate, setFilterDate] = useState<'today' | 'week' | 'month'>('today');
   const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Quick check-in simulation
-  const handleCheckIn = (memberId: string) => {
-    const member = mockMembers.find((m) => m.id === memberId);
-    if (!member) return;
+  const loadAttendance = async () => {
+    try {
+      const att = await fetchAttendanceRecords({ limit: 50 });
+      setRecords(att.records);
+    } catch (err) {
+      console.error('Failed to load attendance records', err);
+    }
+  };
 
-    const newRecord: AttendanceItem = {
-      id: `att-${Date.now()}`,
-      memberId: member.id,
-      memberName: `${member.firstName} ${member.lastName}`,
-      memberEmail: member.email ?? undefined,
-      checkedInAt: new Date().toISOString(),
-      classType: selectedClass,
-      instructor: selectedInstructor,
-      source: 'MANUAL',
-      terminal: 'Front Kiosk Tablet',
-    };
+  useEffect(() => {
+    setLoading(true);
+    Promise.all([
+      fetchMembers({ limit: 100 }),
+      fetchAttendanceRecords({ limit: 50 }),
+    ])
+      .then(([membersRes, attRes]) => {
+        setMembers(membersRes.members);
+        setRecords(attRes.records);
+      })
+      .catch((err) => {
+        console.error('Failed to initialize attendance feed', err);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
 
-    setRecords([newRecord, ...records]);
-    setSearchMember('');
-    setFeedbackMsg(`Checked in ${member.firstName} ${member.lastName} successfully!`);
-    globalThis.setTimeout(() => setFeedbackMsg(null), 3500);
+  const handleCheckIn = async (memberId: string) => {
+    try {
+      const result = await recordCheckInApi({
+        memberId,
+        occurredAt: new Date().toISOString(),
+      });
+      const member = members.find((m) => m.id === memberId);
+      const name = member ? `${member.firstName} ${member.lastName}` : 'Member';
+
+      if (result.alreadyCheckedIn) {
+        setFeedbackMsg(`${name} was already checked in for today.`);
+      } else {
+        const warningSuffix = result.warning ? ` (${result.warning.message})` : '';
+        setFeedbackMsg(`Checked in ${name} successfully!${warningSuffix}`);
+      }
+      setSearchMember('');
+      await loadAttendance();
+      globalThis.setTimeout(() => setFeedbackMsg(null), 4000);
+    } catch (err) {
+      setFeedbackMsg(err instanceof Error ? err.message : 'Check-in failed');
+      globalThis.setTimeout(() => setFeedbackMsg(null), 4000);
+    }
   };
 
   const candidateMembers = useMemo(() => {
     if (!searchMember.trim()) return [];
     const q = searchMember.toLowerCase();
-    return mockMembers.filter(
+    return members.filter(
       (m) =>
         m.firstName.toLowerCase().includes(q) ||
         m.lastName.toLowerCase().includes(q) ||
         (m.email?.toLowerCase().includes(q) ?? false)
     );
-  }, [searchMember]);
+  }, [searchMember, members]);
 
   return (
     <AppShell title="Attendance">
@@ -217,7 +247,8 @@ export default function AttendancePage() {
                         </div>
                         <button
                           type="button"
-                          className="px-2.5 py-1 rounded bg-primary text-on-primary font-label-sm text-label-sm font-semibold"
+                          onClick={() => handleCheckIn(m.id)}
+                          className="px-2.5 py-1 rounded bg-primary text-on-primary font-label-sm text-label-sm font-semibold hover:bg-primary-container"
                         >
                           Check In
                         </button>
@@ -242,7 +273,16 @@ export default function AttendancePage() {
                 <span className="text-text-muted font-body-sm">Sorted by most recent</span>
               </div>
 
-              <div className="divide-y divide-border-delicate overflow-x-auto">
+              {loading ? (
+                <div className="p-8 text-center text-text-muted font-body-md animate-pulse">
+                  Loading attendance feed...
+                </div>
+              ) : records.length === 0 ? (
+                <div className="p-8 text-center text-text-muted font-body-md">
+                  No attendance records logged today yet.
+                </div>
+              ) : (
+                <div className="divide-y divide-border-delicate overflow-x-auto">
                 {records.map((record) => (
                   <div key={record.id} className="py-3 flex items-center justify-between gap-4 hover:bg-surface-bright px-2 rounded-lg transition-colors">
                     <div className="flex items-center gap-3">
@@ -276,6 +316,7 @@ export default function AttendancePage() {
                   </div>
                 ))}
               </div>
+              )}
             </div>
           </div>
         )}

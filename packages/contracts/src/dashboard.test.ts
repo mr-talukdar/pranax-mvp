@@ -74,6 +74,8 @@ describe('dashboard contracts', () => {
       },
     };
 
+    const parsedKPIs = dashboardKPIsSchema.parse(validKPIs);
+    expect(parsedKPIs.activeMembers).toBe(248);
     const parsed = dashboardResponseSchema.parse({ data: validKPIs });
     expect(parsed.data.activeMembers).toBe(248);
     expect(parsed.data.attentionQueue).toHaveLength(1);

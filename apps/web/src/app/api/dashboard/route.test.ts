@@ -65,7 +65,7 @@ describe('GET /api/dashboard', () => {
     const response = await GET(request);
 
     expect(response.status).toBe(200);
-    expect(getStudioContext).toHaveBeenCalledWith('studio-456');
+    expect(getStudioContext).toHaveBeenCalledWith('studio-456', undefined);
     expect(getDashboardSummary).toHaveBeenCalledWith(
       verifiedContext,
       expect.objectContaining({ asOfDate: '2026-06-25' }),

@@ -1,32 +1,96 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ChangeEvent } from 'react';
 import Link from 'next/link';
 import { AppShell } from '../../../components/shell/AppShell';
+import { importAttendanceCsvApi } from '../../../lib/api';
+
+interface PreviewRow {
+  row: number;
+  identifier: string;
+  date: string;
+  classType: string;
+}
 
 export default function AttendanceImportPage() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [fileName, setFileName] = useState<string | null>(null);
+  const [csvContent, setCsvContent] = useState<string>('');
+  const [previewRows, setPreviewRows] = useState<PreviewRow[]>([]);
   const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importResult, setImportResult] = useState<{
+    batchId: string;
+    totalRows: number;
+    importedCount: number;
+    errorCount: number;
+    duplicateCount: number;
+    errors: Array<{ rowNumber: number; reason: string }>;
+  } | null>(null);
 
-  const sampleCsvData = [
-    { row: 1, name: 'Sarah Jenkins', email: 'sarah.jenkins@example.com', date: '2026-06-25 09:30', class: 'Advanced Reformer Flow', status: 'MATCHED' },
-    { row: 2, name: 'David Miller', email: 'david.miller@example.com', date: '2026-06-25 10:45', class: 'Tower & Core Sculpt', status: 'MATCHED' },
-    { row: 3, name: 'Ayesha Morgan', email: 'ayesha.m@example.com', date: '2026-06-25 11:30', class: 'Sunrise Mat Pilates', status: 'MATCHED' },
-    { row: 4, name: 'Unknown Visitor', email: 'unknown.guest@mail.com', date: '2026-06-25 12:00', class: 'Reformer 8-Pack Block', status: 'UNMATCHED' },
-  ];
+  const sampleCsv = `email,occurredAt,className
+member-1@example.com,2026-06-25T09:30:00.000Z,Advanced Reformer Flow
+member-2@example.com,2026-06-25T10:45:00.000Z,Tower & Core Sculpt
+member-3@example.com,2026-06-25T11:30:00.000Z,Sunrise Mat Pilates`;
 
-  const handleSimulateFile = () => {
-    setFileName('mindbody_export_june2026.csv');
+  const processCsvText = (text: string, name: string) => {
+    setCsvContent(text);
+    setFileName(name);
+    setImportError(null);
+
+    const lines = text.trim().split('\n').filter((l) => l.trim().length > 0);
+    if (lines.length < 2) {
+      setImportError('CSV file must have a header row and at least one data row.');
+      return;
+    }
+
+    const rows: PreviewRow[] = [];
+    for (let i = 1; i < lines.length; i++) {
+      const parts = lines[i].split(',').map((p) => p.trim());
+      rows.push({
+        row: i,
+        identifier: parts[0] || 'Unknown',
+        date: parts[1] || new Date().toISOString(),
+        classType: parts[2] || 'Studio Session',
+      });
+    }
+
+    setPreviewRows(rows);
     setStep(2);
   };
 
-  const handleExecuteImport = () => {
+  const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      processCsvText(text, file.name);
+    };
+    reader.readAsText(file);
+  };
+
+  const handleUseSample = () => {
+    processCsvText(sampleCsv, 'mindbody_export_june2026.csv');
+  };
+
+  const handleExecuteImport = async () => {
     setImporting(true);
-    globalThis.setTimeout(() => {
-      setImporting(false);
+    setImportError(null);
+
+    try {
+      const res = await importAttendanceCsvApi({
+        csvContent,
+        sourceName: fileName || 'import.csv',
+      });
+      setImportResult(res);
       setStep(3);
-    }, 1200);
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : 'Import failed');
+    } finally {
+      setImporting(false);
+    }
   };
 
   return (
@@ -50,6 +114,13 @@ export default function AttendanceImportPage() {
             Batch-upload historic attendance records from Mindbody, Glofox, Mariana Tek, or custom CSV logs.
           </p>
         </div>
+
+        {importError && (
+          <div className="p-4 rounded-xl bg-error-container text-on-error-container font-label-md flex items-center gap-2 shadow-xs">
+            <span className="material-symbols-outlined text-[20px]">error</span>
+            <span>{importError}</span>
+          </div>
+        )}
 
         {/* Stepper Bar */}
         <div className="flex items-center justify-between p-4 bg-surface-container-lowest rounded-2xl border border-border-delicate shadow-xs">
@@ -107,19 +178,29 @@ export default function AttendanceImportPage() {
               Select or Drop CSV File
             </h2>
             <p className="font-body-md text-body-md text-on-surface-variant max-w-md">
-              CSV file must contain columns: <code className="bg-surface-container px-1 py-0.5 rounded text-sm">email</code>,{' '}
-              <code className="bg-surface-container px-1 py-0.5 rounded text-sm">checkedInAt</code>, and{' '}
+              CSV file must contain columns: <code className="bg-surface-container px-1 py-0.5 rounded text-sm">email</code> (or member_id),{' '}
+              <code className="bg-surface-container px-1 py-0.5 rounded text-sm">occurredAt</code> (or checkedInAt), and{' '}
               <code className="bg-surface-container px-1 py-0.5 rounded text-sm">className</code>.
             </p>
 
-            <div className="flex flex-wrap items-center gap-3 mt-2">
+            <div className="flex flex-wrap items-center justify-center gap-4 mt-3">
+              <label className="cursor-pointer px-5 py-2.5 rounded-xl bg-primary text-on-primary font-label-md text-label-md font-semibold hover:bg-primary-container shadow-xs transition-all flex items-center gap-2">
+                <span className="material-symbols-outlined text-[18px]">file_upload</span>
+                <span>Choose Local CSV File</span>
+                <input
+                  type="file"
+                  accept=".csv,text/csv"
+                  className="hidden"
+                  onChange={handleFileUpload}
+                />
+              </label>
               <button
                 type="button"
-                onClick={handleSimulateFile}
-                className="px-5 py-2.5 rounded-xl bg-primary text-on-primary font-label-md text-label-md font-semibold hover:bg-primary-container shadow-xs transition-all flex items-center gap-2"
+                onClick={handleUseSample}
+                className="px-4 py-2.5 rounded-xl border border-border-delicate hover:bg-surface-container font-label-md text-label-md text-on-surface flex items-center gap-2"
               >
-                <span className="material-symbols-outlined text-[18px]">folder_open</span>
-                <span>Select Sample Export (mindbody_export.csv)</span>
+                <span className="material-symbols-outlined text-[18px]">draft</span>
+                <span>Load Sample CSV</span>
               </button>
             </div>
           </div>
@@ -134,7 +215,7 @@ export default function AttendanceImportPage() {
                   File Preview: {fileName}
                 </h2>
                 <p className="font-body-sm text-body-sm text-on-surface-variant">
-                  Inspected 4 rows. 3 matched active studio members, 1 unmatched row flagged.
+                  Inspected {previewRows.length} data rows from file. Ready for server ingestion.
                 </p>
               </div>
               <span className="px-2.5 py-1 rounded-full bg-sage-tint text-secondary font-label-sm font-semibold">
@@ -142,37 +223,23 @@ export default function AttendanceImportPage() {
               </span>
             </div>
 
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto max-h-80">
               <table className="w-full text-left border-collapse font-body-md text-body-md">
                 <thead>
-                  <tr className="border-b border-border-delicate text-on-surface-variant font-label-sm">
+                  <tr className="border-b border-border-delicate text-on-surface-variant font-label-sm sticky top-0 bg-surface-container-lowest">
                     <th className="py-2.5 font-semibold">Row</th>
-                    <th className="py-2.5 font-semibold">Member</th>
-                    <th className="py-2.5 font-semibold">Email</th>
+                    <th className="py-2.5 font-semibold">Identifier</th>
                     <th className="py-2.5 font-semibold">Date & Time</th>
                     <th className="py-2.5 font-semibold">Class</th>
-                    <th className="py-2.5 font-semibold text-right">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border-delicate">
-                  {sampleCsvData.map((row) => (
+                  {previewRows.map((row) => (
                     <tr key={row.row} className="hover:bg-surface-bright">
                       <td className="py-3 font-mono text-text-muted">{row.row}</td>
-                      <td className="py-3 font-semibold text-on-surface">{row.name}</td>
-                      <td className="py-3 text-on-surface-variant">{row.email}</td>
-                      <td className="py-3">{row.date}</td>
-                      <td className="py-3">{row.class}</td>
-                      <td className="py-3 text-right">
-                        <span
-                          className={`px-2 py-0.5 rounded-full font-label-sm text-label-sm font-semibold ${
-                            row.status === 'MATCHED'
-                              ? 'bg-sage-tint text-secondary'
-                              : 'bg-rose-tint text-rose-soft'
-                          }`}
-                        >
-                          {row.status}
-                        </span>
-                      </td>
+                      <td className="py-3 font-semibold text-on-surface">{row.identifier}</td>
+                      <td className="py-3 font-mono text-body-sm">{row.date}</td>
+                      <td className="py-3">{row.classType}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -196,7 +263,7 @@ export default function AttendanceImportPage() {
                 <span className="material-symbols-outlined text-[18px]">
                   {importing ? 'hourglass_empty' : 'cloud_upload'}
                 </span>
-                <span>{importing ? 'Importing Batch...' : 'Execute Import (3 Records)'}</span>
+                <span>{importing ? 'Importing Batch...' : `Execute Import (${previewRows.length} Rows)`}</span>
               </button>
             </div>
           </div>
@@ -212,8 +279,32 @@ export default function AttendanceImportPage() {
               Import Batch Completed
             </h2>
             <p className="font-body-md text-body-md text-on-surface-variant max-w-md">
-              Batch #ATT-20260625-01 was successfully committed. 3 attendance records were linked to member profiles and queued for daily retention score updates.
+              Batch #{importResult?.batchId ? importResult.batchId.slice(0, 8).toUpperCase() : 'ATT-SYNC'} was committed.
             </p>
+
+            <div className="grid grid-cols-3 gap-4 w-full max-w-md my-2">
+              <div className="p-3 rounded-xl bg-surface-bright border border-border-delicate">
+                <span className="font-label-sm text-text-muted block">Imported</span>
+                <span className="font-headline-md font-bold text-secondary">{importResult?.importedCount ?? 0}</span>
+              </div>
+              <div className="p-3 rounded-xl bg-surface-bright border border-border-delicate">
+                <span className="font-label-sm text-text-muted block">Duplicates</span>
+                <span className="font-headline-md font-bold text-on-surface">{importResult?.duplicateCount ?? 0}</span>
+              </div>
+              <div className="p-3 rounded-xl bg-surface-bright border border-border-delicate">
+                <span className="font-label-sm text-text-muted block">Errors</span>
+                <span className="font-headline-md font-bold text-error">{importResult?.errorCount ?? 0}</span>
+              </div>
+            </div>
+
+            {importResult?.errors && importResult.errors.length > 0 && (
+              <div className="w-full max-w-md text-left p-3 rounded-xl bg-error-container text-on-error-container text-body-sm font-mono max-h-36 overflow-y-auto">
+                <p className="font-bold mb-1">Row Errors:</p>
+                {importResult.errors.map((err, idx) => (
+                  <p key={idx}>Row {err.rowNumber}: {err.reason}</p>
+                ))}
+              </div>
+            )}
 
             <div className="flex items-center gap-3 mt-4">
               <Link
@@ -224,7 +315,13 @@ export default function AttendanceImportPage() {
               </Link>
               <button
                 type="button"
-                onClick={() => setStep(1)}
+                onClick={() => {
+                  setStep(1);
+                  setCsvContent('');
+                  setFileName(null);
+                  setPreviewRows([]);
+                  setImportResult(null);
+                }}
                 className="px-4 py-2.5 rounded-xl border border-border-delicate hover:bg-surface-container text-on-surface font-label-md text-label-md font-medium"
               >
                 Import Another File

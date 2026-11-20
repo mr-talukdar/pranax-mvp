@@ -1,6 +1,6 @@
 'use client';
 
-import { mockStudioContext } from '../../lib/mockData';
+import { TARGET_STUDIO } from '../../lib/constants';
 
 interface HeaderProps {
   onToggleSidebar?: () => void;
@@ -33,7 +33,7 @@ export function Header({ onToggleSidebar, title }: HeaderProps) {
         <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-sage-tint border border-sage-border">
           <span className="w-1.5 h-1.5 rounded-full bg-secondary" />
           <span className="font-label-sm text-label-sm font-semibold text-secondary">
-            Live • {mockStudioContext.name}
+            Live • {TARGET_STUDIO.name}
           </span>
         </div>
       </div>
@@ -47,7 +47,7 @@ export function Header({ onToggleSidebar, title }: HeaderProps) {
 
         {/* User Avatar Action */}
         <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-on-primary font-bold text-label-md cursor-pointer hover:opacity-90 shadow-xs">
-          {mockStudioContext.ownerInitials}
+          {TARGET_STUDIO.ownerInitials}
         </div>
       </div>
     </header>

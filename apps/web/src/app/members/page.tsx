@@ -5,20 +5,32 @@ import Link from 'next/link';
 import { AppShell } from '../../components/shell/AppShell';
 import type { MemberSummary } from '../../lib/types';
 import { fetchMembers } from '../../lib/api';
-import { mockMembers } from '../../lib/mockData';
 
 export default function MembersPage() {
-  const [members, setMembers] = useState<MemberSummary[]>(mockMembers);
+  const [members, setMembers] = useState<MemberSummary[]>([]);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'active' | 'paused' | 'expiring' | 'high_risk' | 'new'>('all');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadMembers = () => {
+    setLoading(true);
+    setError(null);
+    fetchMembers({ limit: 100 })
+      .then((data) => {
+        setMembers(data.members);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error('Failed to load members', err);
+        setError(err instanceof Error ? err.message : 'Failed to load members directory.');
+        setLoading(false);
+      });
+  };
 
   useEffect(() => {
-    fetchMembers().then((data) => {
-      setMembers(data);
-      setLoading(false);
-    });
+    loadMembers();
   }, []);
 
   const filteredMembers = useMemo(() => {
@@ -174,7 +186,19 @@ export default function MembersPage() {
 
         {/* Members Directory Table */}
         <div className="bg-surface-container-lowest rounded-2xl border border-border-delicate shadow-xs overflow-hidden">
-          {loading ? (
+          {error ? (
+            <div className="p-12 text-center flex flex-col items-center justify-center gap-3">
+              <span className="material-symbols-outlined text-[36px] text-error">error</span>
+              <p className="font-headline-sm font-semibold text-error">{error}</p>
+              <button
+                type="button"
+                onClick={loadMembers}
+                className="px-4 py-2 rounded-xl bg-primary text-on-primary font-label-md font-semibold hover:bg-primary-container"
+              >
+                Retry
+              </button>
+            </div>
+          ) : loading ? (
             <div className="p-12 text-center text-text-muted font-body-md animate-pulse">
               Loading members directory...
             </div>

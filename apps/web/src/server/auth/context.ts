@@ -11,9 +11,13 @@ export type StudioContext = {
 
 export async function getStudioContext(
   selectedStudioId?: string,
+  authHeader?: string,
 ): Promise<StudioContext | undefined> {
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.auth.getUser();
+  const token = authHeader?.replace(/^Bearer\s+/i, '').trim();
+  const { data, error } = token
+    ? await supabase.auth.getUser(token)
+    : await supabase.auth.getUser();
   if (error || !data.user) {
     return undefined;
   }

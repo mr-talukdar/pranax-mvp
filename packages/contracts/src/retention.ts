@@ -179,6 +179,10 @@ export type RetentionSnapshotMetadata = z.infer<
 export type RetentionSnapshotPersistence = z.infer<
   typeof retentionSnapshotPersistenceSchema
 >;
+export type RetentionIndicator = z.infer<typeof retentionIndicatorSchema>;
+export type RetentionRecommendation = z.infer<
+  typeof retentionRecommendationSchema
+>;
 export type RetentionAssessmentResponse = z.infer<
   typeof retentionAssessmentResponseSchema
 >;

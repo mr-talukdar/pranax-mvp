@@ -21,6 +21,7 @@ export async function GET(
 ) {
   const context = await getStudioContext(
     request.headers.get('x-studio-id') ?? undefined,
+    request.headers.get('authorization') ?? undefined,
   );
   if (!context) {
     return NextResponse.json(

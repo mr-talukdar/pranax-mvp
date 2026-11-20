@@ -3,8 +3,39 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import type { DashboardKPIs, PrototypeState } from '../../lib/types';
-import { mockDashboardKPIs, mockStudioContext } from '../../lib/mockData';
+import { TARGET_STUDIO } from '../../lib/constants';
 import { fetchDashboardData } from '../../lib/api';
+
+const EMPTY_DASHBOARD_KPIS: DashboardKPIs = {
+  activeMembers: 0,
+  totalMembers: 0,
+  newRegistrations: 0,
+  attendanceToday: 0,
+  highRiskCount: 0,
+  expiringIn7Days: 0,
+  membershipBreakdown: {
+    active: 0,
+    activePercent: 0,
+    paused: 0,
+    pausedPercent: 0,
+    expiring: 0,
+    expiringPercent: 0,
+    expired: 0,
+    expiredPercent: 0,
+  },
+  attendanceTrends: [],
+  retentionSummary: {
+    lowCount: 0,
+    lowPercent: 0,
+    mediumCount: 0,
+    mediumPercent: 0,
+    highCount: 0,
+    highPercent: 0,
+    limitedCount: 0,
+    limitedPercent: 0,
+  },
+  attentionQueue: [],
+};
 
 interface DashboardOverviewProps {
   initialData?: DashboardKPIs;
@@ -13,17 +44,34 @@ interface DashboardOverviewProps {
 export function DashboardOverview({
   initialData,
 }: DashboardOverviewProps) {
-  const [state, setState] = useState<PrototypeState>('active');
+  const [state, setState] = useState<PrototypeState>(initialData ? 'active' : 'loading');
   const [trendMode, setTrendMode] = useState<'daily' | 'monthly'>('daily');
-  const [data, setData] = useState<DashboardKPIs>(initialData ?? mockDashboardKPIs);
+  const [data, setData] = useState<DashboardKPIs>(initialData ?? EMPTY_DASHBOARD_KPIS);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const loadData = () => {
+    setState('loading');
+    setErrorMessage(null);
+    fetchDashboardData()
+      .then((result) => {
+        setData(result);
+        setState('active');
+      })
+      .catch((err) => {
+        console.error('Failed to load dashboard data', err);
+        setErrorMessage(
+          err instanceof Error ? err.message : 'Studio telemetries could not synchronize with the cloud database.',
+        );
+        setState('error');
+      });
+  };
 
   useEffect(() => {
     if (initialData) {
       setData(initialData);
+      setState('active');
     } else {
-      fetchDashboardData().then((result) => {
-        if (result) setData(result);
-      });
+      loadData();
     }
   }, [initialData]);
 
@@ -79,13 +127,13 @@ export function DashboardOverview({
                 Failed to load studio analytics
               </p>
               <p className="font-body-md text-body-md opacity-90">
-                Studio telemetries could not synchronize with the cloud database. Please retry or check connection.
+                {errorMessage || 'Studio telemetries could not synchronize with the cloud database. Please retry or check connection.'}
               </p>
             </div>
           </div>
           <button
             type="button"
-            onClick={() => setState('active')}
+            onClick={loadData}
             className="px-4 py-2 rounded-lg bg-error text-on-error font-label-md text-label-md font-semibold hover:opacity-95 shadow-xs transition-opacity shrink-0"
           >
             Retry Sync
@@ -102,10 +150,10 @@ export function DashboardOverview({
             </h1>
             <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-surface-container-high text-on-surface font-label-sm text-label-sm font-medium">
               <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-              <span>{mockStudioContext.name} • {mockStudioContext.branch}</span>
+              <span>{TARGET_STUDIO.name} • {TARGET_STUDIO.branch}</span>
             </div>
             <span className="px-2.5 py-0.5 rounded-full bg-sage-tint border border-sage-border text-secondary font-label-sm text-label-sm font-medium">
-              Demo Data Mode • Active Studio
+              Live Remote Database • Active Studio
             </span>
           </div>
           <p className="font-body-md text-body-md text-on-surface-variant">

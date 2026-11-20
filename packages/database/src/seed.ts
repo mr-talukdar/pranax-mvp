@@ -33,6 +33,7 @@ const datasetSchema = z.object({
 
 const datasetPath = process.argv[2] ?? resolve('datasets/latest/dataset.json');
 const resetSynthetic = process.argv.includes('--reset-synthetic');
+const CHUNK_SIZE = 1000;
 
 function assertSyntheticOnly(
   studios: Array<Record<string, unknown>>,
@@ -82,6 +83,22 @@ function withDates(
   return result;
 }
 
+async function batchInsert<T extends Record<string, unknown>>(
+  records: T[],
+  chunkSize: number,
+  insertChunk: (chunk: T[]) => Promise<{ count: number }>,
+): Promise<{ inserted: number; skipped: number }> {
+  let inserted = 0;
+  let skipped = 0;
+  for (let i = 0; i < records.length; i += chunkSize) {
+    const chunk = records.slice(i, i + chunkSize);
+    const result = await insertChunk(chunk);
+    inserted += result.count;
+    skipped += chunk.length - result.count;
+  }
+  return { inserted, skipped };
+}
+
 async function main(): Promise<void> {
   const parsed = datasetSchema.parse(
     JSON.parse(await readFile(datasetPath, 'utf8')),
@@ -118,167 +135,199 @@ async function main(): Promise<void> {
     skipped: 0,
     rejected: 0,
   };
-  const counts = await prisma.$transaction(async (tx) => {
-    const studio = parsed.studios[0];
-    if (resetSynthetic) {
-      const existing = await tx.studio.findUnique({
+  const counts = await prisma.$transaction(
+    async (tx) => {
+      const studio = parsed.studios[0];
+      if (resetSynthetic) {
+        const existing = await tx.studio.findUnique({
+          where: { id: parsed.manifest.syntheticStudioId },
+          select: { isSynthetic: true },
+        });
+        if (existing && !existing.isSynthetic) {
+          throw new Error('Refusing to reset a non-synthetic studio.');
+        }
+        if (existing) {
+          throw new Error(
+            'Synthetic reset is disabled because historical snapshots are immutable.',
+          );
+        }
+      }
+
+      const inserted = {
+        studios: 0,
+        studioSettings: 0,
+        members: 0,
+        membershipPlans: 0,
+        membershipPeriods: 0,
+        membershipPauses: 0,
+        attendanceImportBatches: 0,
+        attendanceRecords: 0,
+        retentionSnapshots: 0,
+        churnPredictions: 0,
+      };
+
+      const existingStudio = await tx.studio.findUnique({
         where: { id: parsed.manifest.syntheticStudioId },
-        select: { isSynthetic: true },
+        select: { id: true },
       });
-      if (existing && !existing.isSynthetic) {
-        throw new Error('Refusing to reset a non-synthetic studio.');
-      }
-      if (existing) {
-        throw new Error(
-          'Synthetic reset is disabled because historical snapshots are immutable.',
-        );
-      }
-    }
-    const existingStudio = await tx.studio.findUnique({
-      where: { id: parsed.manifest.syntheticStudioId },
-      select: { id: true },
-    });
-    if (existingStudio) {
-      report.skipped += 1;
-    } else {
-      await tx.studio.create({ data: studio as never });
-      report.inserted += 1;
-    }
-
-    const inserted = {
-      studios: 1,
-      studioSettings: 0,
-      members: 0,
-      membershipPlans: 0,
-      membershipPeriods: 0,
-      membershipPauses: 0,
-      attendanceImportBatches: 0,
-      attendanceRecords: 0,
-      retentionSnapshots: 0,
-      churnPredictions: 0,
-    };
-
-    for (const settings of parsed.studioSettings) {
-      const data = withDates(settings, [
-        'attendanceCoverageFrom',
-        'coverageVerifiedAt',
-      ]);
-      const existing = await tx.studioSettings.findUnique({
-        where: { id: settings.id as string },
-      });
-      if (existing) report.skipped += 1;
-      else {
-        await tx.studioSettings.create({ data: data as never });
-        report.inserted += 1;
-        inserted.studioSettings += 1;
-      }
-    }
-    for (const member of parsed.members) {
-      const data = withDates(member, ['joinedAt', 'createdAt', 'updatedAt']);
-      const existing = await tx.member.findUnique({
-        where: { id: member.id as string },
-      });
-      if (existing) report.skipped += 1;
-      else {
-        await tx.member.create({ data: data as never });
-        report.inserted += 1;
-        inserted.members += 1;
-      }
-    }
-    for (const plan of parsed.membershipPlans) {
-      const existing = await tx.membershipPlan.findUnique({
-        where: { id: plan.id as string },
-      });
-      if (existing) report.skipped += 1;
-      else {
-        await tx.membershipPlan.create({ data: plan as never });
-        report.inserted += 1;
-        inserted.membershipPlans += 1;
-      }
-    }
-    for (const period of parsed.membershipPeriods) {
-      const data = withDates(period, [
-        'startsAt',
-        'originalEndsAt',
-        'effectiveEndsAt',
-        'cancelledAt',
-      ]);
-      const existing = await tx.membershipPeriod.findUnique({
-        where: { id: period.id as string },
-      });
-      if (existing) report.skipped += 1;
-      else {
-        await tx.membershipPeriod.create({ data: data as never });
-        report.inserted += 1;
-        inserted.membershipPeriods += 1;
-      }
-    }
-    for (const pause of parsed.membershipPauses) {
-      const data = withDates(pause, ['startsAt', 'resumesAt']);
-      const existing = await tx.membershipPause.findUnique({
-        where: { id: pause.id as string },
-      });
-      if (existing) report.skipped += 1;
-      else {
-        await tx.membershipPause.create({ data: data as never });
-        report.inserted += 1;
-        inserted.membershipPauses += 1;
-      }
-    }
-    for (const batch of parsed.attendanceImportBatches) {
-      const data = withDates(batch, ['importedAt']);
-      const existing = await tx.attendanceImportBatch.findUnique({
-        where: { id: batch.id as string },
-      });
-      if (existing) report.skipped += 1;
-      else {
-        await tx.attendanceImportBatch.create({ data: data as never });
-        report.inserted += 1;
-        inserted.attendanceImportBatches += 1;
-      }
-    }
-    for (const record of parsed.attendanceRecords) {
-      const data = withDates(record, ['occurredAt', 'localDate']);
-      const existing = await tx.attendanceRecord.findUnique({
-        where: { id: record.id as string },
-      });
-      if (existing) report.skipped += 1;
-      else {
-        await tx.attendanceRecord.create({ data: data as never });
-        report.inserted += 1;
-        inserted.attendanceRecords += 1;
-      }
-    }
-    for (const snapshot of parsed.retentionSnapshots) {
-      const data = withDates(snapshot, ['snapshotDate']);
-      const existing = await tx.retentionSnapshot.findUnique({
-        where: { id: snapshot.id as string },
-      });
-      if (existing) {
+      if (existingStudio) {
         report.skipped += 1;
       } else {
-        await tx.retentionSnapshot.create({ data: data as never });
+        await tx.studio.create({ data: studio as never });
         report.inserted += 1;
-        inserted.retentionSnapshots += 1;
+        inserted.studios += 1;
       }
-    }
-    for (const prediction of parsed.churnPredictions) {
-      const data = withDates(prediction, [
-        'predictionDate',
-        'featureSnapshotAt',
-      ]);
-      const existing = await tx.churnPrediction.findUnique({
-        where: { id: prediction.id as string },
-      });
-      if (existing) report.skipped += 1;
-      else {
-        await tx.churnPrediction.create({ data: data as never });
-        report.inserted += 1;
-        inserted.churnPredictions += 1;
-      }
-    }
-    return inserted;
-  });
+
+      const preparedStudioSettings = parsed.studioSettings.map((s) =>
+        withDates(s, ['attendanceCoverageFrom', 'coverageVerifiedAt']),
+      );
+      const studioSettingsResult = await batchInsert(
+        preparedStudioSettings,
+        CHUNK_SIZE,
+        (chunk) =>
+          tx.studioSettings.createMany({
+            data: chunk as never,
+            skipDuplicates: true,
+          }),
+      );
+      report.inserted += studioSettingsResult.inserted;
+      report.skipped += studioSettingsResult.skipped;
+      inserted.studioSettings += studioSettingsResult.inserted;
+
+      const preparedMembers = parsed.members.map((m) =>
+        withDates(m, ['joinedAt', 'createdAt', 'updatedAt']),
+      );
+      const membersResult = await batchInsert(
+        preparedMembers,
+        CHUNK_SIZE,
+        (chunk) =>
+          tx.member.createMany({
+            data: chunk as never,
+            skipDuplicates: true,
+          }),
+      );
+      report.inserted += membersResult.inserted;
+      report.skipped += membersResult.skipped;
+      inserted.members += membersResult.inserted;
+
+      const plansResult = await batchInsert(
+        parsed.membershipPlans,
+        CHUNK_SIZE,
+        (chunk) =>
+          tx.membershipPlan.createMany({
+            data: chunk as never,
+            skipDuplicates: true,
+          }),
+      );
+      report.inserted += plansResult.inserted;
+      report.skipped += plansResult.skipped;
+      inserted.membershipPlans += plansResult.inserted;
+
+      const preparedPeriods = parsed.membershipPeriods.map((p) =>
+        withDates(p, [
+          'startsAt',
+          'originalEndsAt',
+          'effectiveEndsAt',
+          'cancelledAt',
+        ]),
+      );
+      const periodsResult = await batchInsert(
+        preparedPeriods,
+        CHUNK_SIZE,
+        (chunk) =>
+          tx.membershipPeriod.createMany({
+            data: chunk as never,
+            skipDuplicates: true,
+          }),
+      );
+      report.inserted += periodsResult.inserted;
+      report.skipped += periodsResult.skipped;
+      inserted.membershipPeriods += periodsResult.inserted;
+
+      const preparedPauses = parsed.membershipPauses.map((p) =>
+        withDates(p, ['startsAt', 'resumesAt']),
+      );
+      const pausesResult = await batchInsert(
+        preparedPauses,
+        CHUNK_SIZE,
+        (chunk) =>
+          tx.membershipPause.createMany({
+            data: chunk as never,
+            skipDuplicates: true,
+          }),
+      );
+      report.inserted += pausesResult.inserted;
+      report.skipped += pausesResult.skipped;
+      inserted.membershipPauses += pausesResult.inserted;
+
+      const preparedBatches = parsed.attendanceImportBatches.map((b) =>
+        withDates(b, ['importedAt']),
+      );
+      const batchesResult = await batchInsert(
+        preparedBatches,
+        CHUNK_SIZE,
+        (chunk) =>
+          tx.attendanceImportBatch.createMany({
+            data: chunk as never,
+            skipDuplicates: true,
+          }),
+      );
+      report.inserted += batchesResult.inserted;
+      report.skipped += batchesResult.skipped;
+      inserted.attendanceImportBatches += batchesResult.inserted;
+
+      const preparedRecords = parsed.attendanceRecords.map((r) =>
+        withDates(r, ['occurredAt', 'localDate']),
+      );
+      const recordsResult = await batchInsert(
+        preparedRecords,
+        CHUNK_SIZE,
+        (chunk) =>
+          tx.attendanceRecord.createMany({
+            data: chunk as never,
+            skipDuplicates: true,
+          }),
+      );
+      report.inserted += recordsResult.inserted;
+      report.skipped += recordsResult.skipped;
+      inserted.attendanceRecords += recordsResult.inserted;
+
+      const preparedSnapshots = parsed.retentionSnapshots.map((s) =>
+        withDates(s, ['snapshotDate']),
+      );
+      const snapshotsResult = await batchInsert(
+        preparedSnapshots,
+        CHUNK_SIZE,
+        (chunk) =>
+          tx.retentionSnapshot.createMany({
+            data: chunk as never,
+            skipDuplicates: true,
+          }),
+      );
+      report.inserted += snapshotsResult.inserted;
+      report.skipped += snapshotsResult.skipped;
+      inserted.retentionSnapshots += snapshotsResult.inserted;
+
+      const preparedPredictions = parsed.churnPredictions.map((p) =>
+        withDates(p, ['predictionDate', 'featureSnapshotAt']),
+      );
+      const predictionsResult = await batchInsert(
+        preparedPredictions,
+        CHUNK_SIZE,
+        (chunk) =>
+          tx.churnPrediction.createMany({
+            data: chunk as never,
+            skipDuplicates: true,
+          }),
+      );
+      report.inserted += predictionsResult.inserted;
+      report.skipped += predictionsResult.skipped;
+      inserted.churnPredictions += predictionsResult.inserted;
+
+      return inserted;
+    },
+    { maxWait: 30000, timeout: 180000 },
+  );
 
   console.log(JSON.stringify({ datasetPath, counts, report }, null, 2));
 }

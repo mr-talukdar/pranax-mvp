@@ -6,6 +6,7 @@ import { getDashboardSummary } from '../../../server/services/dashboard';
 export async function GET(request: Request) {
   const context = await getStudioContext(
     request.headers.get('x-studio-id') ?? undefined,
+    request.headers.get('authorization') ?? undefined,
   );
 
   if (!context) {

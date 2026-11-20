@@ -3,9 +3,15 @@
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { AppShell } from '../../../components/shell/AppShell';
-import type { MemberDetail } from '../../../lib/types';
-import { fetchMemberById } from '../../../lib/api';
-import { mockAttendanceRecords } from '../../../lib/mockData';
+import type { AttendanceItem, MemberDetail } from '../../../lib/types';
+import {
+  fetchMemberById,
+  fetchAttendanceRecords,
+  pauseMembershipApi,
+  resumeMembershipApi,
+  renewMembershipApi,
+  cancelMembershipApi,
+} from '../../../lib/api';
 
 interface MemberPageProps {
   params: Promise<{ memberId: string }>;
@@ -16,20 +22,37 @@ export default function MemberDetailPage({ params }: MemberPageProps) {
   const memberId = resolvedParams.memberId;
 
   const [member, setMember] = useState<MemberDetail | null>(null);
+  const [attendanceVisits, setAttendanceVisits] = useState<AttendanceItem[]>([]);
   const [activeTab, setActiveTab] = useState<'overview' | 'membership' | 'attendance' | 'retention'>('overview');
-  const [activeModal, setActiveModal] = useState<'pause' | 'renew' | 'cancel' | null>(null);
+  const [activeModal, setActiveModal] = useState<'pause' | 'renew' | 'cancel' | 'resume' | null>(null);
   const [pauseReason, setPauseReason] = useState('Medical recovery');
   const [pauseWeeks, setPauseWeeks] = useState('4');
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const [submittingAction, setSubmittingAction] = useState(false);
+
+  const loadMemberData = async () => {
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const data = await fetchMemberById(memberId);
+      setMember(data);
+      const att = await fetchAttendanceRecords({ memberId });
+      setAttendanceVisits(att.records);
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : 'Failed to load member profile');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    fetchMemberById(memberId).then((data) => {
-      setMember(data ?? null);
-      setLoading(false);
-    });
+    loadMemberData();
   }, [memberId]);
 
-  if (loading || !member) {
+  if (loading) {
     return (
       <AppShell title="Member Profile">
         <div className="flex flex-col items-center justify-center p-16 animate-pulse text-text-muted">
@@ -39,9 +62,106 @@ export default function MemberDetailPage({ params }: MemberPageProps) {
     );
   }
 
-  const attendanceVisits = mockAttendanceRecords.filter(
-    (a) => a.memberId === member.id || a.memberName.includes(member.firstName)
-  );
+  if (loadError || !member) {
+    return (
+      <AppShell title="Member Not Found">
+        <div className="flex flex-col items-center justify-center p-16 gap-4 text-center">
+          <span className="material-symbols-outlined text-[48px] text-error">error</span>
+          <p className="font-headline-sm font-semibold text-error">
+            {loadError || 'Member profile could not be found.'}
+          </p>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={loadMemberData}
+              className="px-4 py-2 rounded-xl bg-primary text-on-primary font-label-md font-semibold"
+            >
+              Retry
+            </button>
+            <Link
+              href="/members"
+              className="px-4 py-2 rounded-xl border border-border-delicate hover:bg-surface-container font-label-md"
+            >
+              Back to Members
+            </Link>
+          </div>
+        </div>
+      </AppShell>
+    );
+  }
+
+  const handlePause = async () => {
+    if (!member) return;
+    setSubmittingAction(true);
+    setActionError(null);
+    try {
+      const periodId = member.membership.planId;
+      const now = new Date();
+      const resumesAt = new Date(now.getTime() + Number(pauseWeeks) * 7 * 86_400_000).toISOString();
+      await pauseMembershipApi(member.id, periodId, {
+        startsAt: now.toISOString(),
+        resumesAt,
+      });
+      setActionSuccess(`Membership paused for ${pauseWeeks} weeks.`);
+      setActiveModal(null);
+      await loadMemberData();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Failed to pause membership.');
+    } finally {
+      setSubmittingAction(false);
+    }
+  };
+
+  const handleResume = async () => {
+    if (!member) return;
+    setSubmittingAction(true);
+    setActionError(null);
+    try {
+      const periodId = member.membership.planId;
+      await resumeMembershipApi(member.id, periodId);
+      setActionSuccess('Membership resumed successfully.');
+      setActiveModal(null);
+      await loadMemberData();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Failed to resume membership.');
+    } finally {
+      setSubmittingAction(false);
+    }
+  };
+
+  const handleRenew = async () => {
+    if (!member) return;
+    setSubmittingAction(true);
+    setActionError(null);
+    try {
+      const periodId = member.membership.planId;
+      await renewMembershipApi(member.id, periodId, {});
+      setActionSuccess('Membership renewed successfully.');
+      setActiveModal(null);
+      await loadMemberData();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Failed to renew membership.');
+    } finally {
+      setSubmittingAction(false);
+    }
+  };
+
+  const handleCancel = async () => {
+    if (!member) return;
+    setSubmittingAction(true);
+    setActionError(null);
+    try {
+      const periodId = member.membership.planId;
+      await cancelMembershipApi(member.id, periodId, { reason: 'Member requested cancellation' });
+      setActionSuccess('Membership cancelled successfully.');
+      setActiveModal(null);
+      await loadMemberData();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Failed to cancel membership.');
+    } finally {
+      setSubmittingAction(false);
+    }
+  };
 
   return (
     <AppShell title={`${member.firstName} ${member.lastName}`}>
@@ -56,6 +176,30 @@ export default function MemberDetailPage({ params }: MemberPageProps) {
             {member.firstName} {member.lastName}
           </span>
         </div>
+
+        {/* Action Feedback Alerts */}
+        {actionSuccess && (
+          <div className="p-4 rounded-xl bg-sage-tint border border-sage-border text-secondary font-label-md text-label-md font-semibold flex items-center justify-between shadow-xs">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-[20px]">check_circle</span>
+              <span>{actionSuccess}</span>
+            </div>
+            <button type="button" onClick={() => setActionSuccess(null)}>
+              <span className="material-symbols-outlined text-[18px]">close</span>
+            </button>
+          </div>
+        )}
+        {actionError && (
+          <div className="p-4 rounded-xl bg-error-container text-on-error-container font-label-md text-label-md font-semibold flex items-center justify-between shadow-xs">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-[20px]">error</span>
+              <span>{actionError}</span>
+            </div>
+            <button type="button" onClick={() => setActionError(null)}>
+              <span className="material-symbols-outlined text-[18px]">close</span>
+            </button>
+          </div>
+        )}
 
         {/* Member Profile Header Banner */}
         <div className="bg-surface-container-lowest rounded-2xl border border-border-delicate p-6 sm:p-8 relative overflow-hidden shadow-xs">
@@ -147,16 +291,29 @@ export default function MemberDetailPage({ params }: MemberPageProps) {
 
             {/* Quick Actions */}
             <div className="flex flex-wrap items-center gap-2.5 self-start lg:self-auto">
-              <button
-                type="button"
-                onClick={() => setActiveModal('pause')}
-                className="px-3.5 py-2 rounded-xl border border-border-delicate bg-surface-bright hover:bg-surface-container text-on-surface font-label-md text-label-md font-medium transition-colors flex items-center gap-1.5"
-              >
-                <span className="material-symbols-outlined text-[18px] text-tertiary">
-                  pause_circle
-                </span>
-                <span>Pause Pass</span>
-              </button>
+              {member.status === 'PAUSED' ? (
+                <button
+                  type="button"
+                  onClick={() => setActiveModal('resume')}
+                  className="px-3.5 py-2 rounded-xl border border-border-delicate bg-surface-bright hover:bg-surface-container text-on-surface font-label-md text-label-md font-medium transition-colors flex items-center gap-1.5"
+                >
+                  <span className="material-symbols-outlined text-[18px] text-primary">
+                    play_circle
+                  </span>
+                  <span>Resume Pass</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setActiveModal('pause')}
+                  className="px-3.5 py-2 rounded-xl border border-border-delicate bg-surface-bright hover:bg-surface-container text-on-surface font-label-md text-label-md font-medium transition-colors flex items-center gap-1.5"
+                >
+                  <span className="material-symbols-outlined text-[18px] text-tertiary">
+                    pause_circle
+                  </span>
+                  <span>Pause Pass</span>
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setActiveModal('renew')}
@@ -166,6 +323,16 @@ export default function MemberDetailPage({ params }: MemberPageProps) {
                   autorenew
                 </span>
                 <span>Renew</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveModal('cancel')}
+                className="px-3.5 py-2 rounded-xl border border-border-delicate bg-surface-bright hover:bg-surface-container text-on-surface-variant hover:text-error font-label-md text-label-md font-medium transition-colors flex items-center gap-1.5"
+              >
+                <span className="material-symbols-outlined text-[18px]">
+                  cancel
+                </span>
+                <span>Cancel</span>
               </button>
               <Link
                 href="/attendance"
@@ -324,19 +491,36 @@ export default function MemberDetailPage({ params }: MemberPageProps) {
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setActiveModal('pause')}
-                  className="px-3.5 py-2 rounded-xl border border-border-delicate bg-surface-bright hover:bg-surface-container text-on-surface font-label-md text-label-md font-medium"
-                >
-                  Pause
-                </button>
+                {member.status === 'PAUSED' ? (
+                  <button
+                    type="button"
+                    onClick={() => setActiveModal('resume')}
+                    className="px-3.5 py-2 rounded-xl border border-border-delicate bg-surface-bright hover:bg-surface-container text-on-surface font-label-md text-label-md font-medium"
+                  >
+                    Resume
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setActiveModal('pause')}
+                    className="px-3.5 py-2 rounded-xl border border-border-delicate bg-surface-bright hover:bg-surface-container text-on-surface font-label-md text-label-md font-medium"
+                  >
+                    Pause
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setActiveModal('renew')}
                   className="px-3.5 py-2 rounded-xl bg-primary text-on-primary font-label-md text-label-md font-semibold hover:bg-primary-container"
                 >
                   Renew
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveModal('cancel')}
+                  className="px-3 py-2 rounded-xl border border-border-delicate bg-surface-bright hover:bg-surface-container text-on-surface-variant hover:text-error font-label-md text-label-md font-medium"
+                >
+                  Cancel
                 </button>
               </div>
             </div>
@@ -641,6 +825,7 @@ export default function MemberDetailPage({ params }: MemberPageProps) {
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-border-delicate">
                 <button
                   type="button"
+                  disabled={submittingAction}
                   onClick={() => setActiveModal(null)}
                   className="px-4 py-2 rounded-xl border border-border-delicate hover:bg-surface-container text-on-surface font-label-md font-medium"
                 >
@@ -648,13 +833,11 @@ export default function MemberDetailPage({ params }: MemberPageProps) {
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    globalThis.alert(`Membership for ${member.firstName} paused for ${pauseWeeks} weeks.`);
-                    setActiveModal(null);
-                  }}
-                  className="px-4 py-2 rounded-xl bg-primary text-on-primary font-label-md font-semibold hover:bg-primary-container"
+                  disabled={submittingAction}
+                  onClick={handlePause}
+                  className="px-4 py-2 rounded-xl bg-primary text-on-primary font-label-md font-semibold hover:bg-primary-container disabled:opacity-50"
                 >
-                  Confirm Pause
+                  {submittingAction ? 'Pausing...' : 'Confirm Pause'}
                 </button>
               </div>
             </div>
@@ -690,6 +873,7 @@ export default function MemberDetailPage({ params }: MemberPageProps) {
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-border-delicate">
                 <button
                   type="button"
+                  disabled={submittingAction}
                   onClick={() => setActiveModal(null)}
                   className="px-4 py-2 rounded-xl border border-border-delicate hover:bg-surface-container text-on-surface font-label-md font-medium"
                 >
@@ -697,13 +881,93 @@ export default function MemberDetailPage({ params }: MemberPageProps) {
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    globalThis.alert(`Membership for ${member.firstName} renewed successfully!`);
-                    setActiveModal(null);
-                  }}
-                  className="px-4 py-2 rounded-xl bg-secondary text-on-secondary font-label-md font-semibold hover:opacity-90"
+                  disabled={submittingAction}
+                  onClick={handleRenew}
+                  className="px-4 py-2 rounded-xl bg-secondary text-on-secondary font-label-md font-semibold hover:opacity-90 disabled:opacity-50"
                 >
-                  Confirm Renewal
+                  {submittingAction ? 'Renewing...' : 'Confirm Renewal'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL: RESUME MEMBERSHIP */}
+        {activeModal === 'resume' && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-on-surface/40 backdrop-blur-xs">
+            <div className="bg-surface-container-lowest rounded-2xl max-w-md w-full p-6 shadow-xl border border-border-delicate flex flex-col gap-4">
+              <div className="flex items-center justify-between pb-2 border-b border-border-delicate">
+                <h3 className="font-headline-sm font-bold text-on-surface">Resume Membership</h3>
+                <button
+                  type="button"
+                  onClick={() => setActiveModal(null)}
+                  className="p-1 rounded-lg text-on-surface-variant hover:bg-surface-container"
+                >
+                  <span className="material-symbols-outlined text-[20px]">close</span>
+                </button>
+              </div>
+
+              <p className="font-body-md text-on-surface-variant">
+                Resume {member.firstName}&apos;s membership pass effective immediately. The expiration date has been shifted forward by the pause duration.
+              </p>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-border-delicate">
+                <button
+                  type="button"
+                  disabled={submittingAction}
+                  onClick={() => setActiveModal(null)}
+                  className="px-4 py-2 rounded-xl border border-border-delicate hover:bg-surface-container text-on-surface font-label-md font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={submittingAction}
+                  onClick={handleResume}
+                  className="px-4 py-2 rounded-xl bg-primary text-on-primary font-label-md font-semibold hover:bg-primary-container disabled:opacity-50"
+                >
+                  {submittingAction ? 'Resuming...' : 'Confirm Resume'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL: CANCEL MEMBERSHIP */}
+        {activeModal === 'cancel' && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-on-surface/40 backdrop-blur-xs">
+            <div className="bg-surface-container-lowest rounded-2xl max-w-md w-full p-6 shadow-xl border border-border-delicate flex flex-col gap-4">
+              <div className="flex items-center justify-between pb-2 border-b border-border-delicate">
+                <h3 className="font-headline-sm font-bold text-error">Cancel Membership</h3>
+                <button
+                  type="button"
+                  onClick={() => setActiveModal(null)}
+                  className="p-1 rounded-lg text-on-surface-variant hover:bg-surface-container"
+                >
+                  <span className="material-symbols-outlined text-[20px]">close</span>
+                </button>
+              </div>
+
+              <p className="font-body-md text-on-surface-variant">
+                Are you sure you want to cancel {member.firstName}&apos;s membership? The member will no longer have active studio check-in privileges.
+              </p>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-border-delicate">
+                <button
+                  type="button"
+                  disabled={submittingAction}
+                  onClick={() => setActiveModal(null)}
+                  className="px-4 py-2 rounded-xl border border-border-delicate hover:bg-surface-container text-on-surface font-label-md font-medium"
+                >
+                  Keep Pass
+                </button>
+                <button
+                  type="button"
+                  disabled={submittingAction}
+                  onClick={handleCancel}
+                  className="px-4 py-2 rounded-xl bg-error text-on-error font-label-md font-semibold hover:opacity-90 disabled:opacity-50"
+                >
+                  {submittingAction ? 'Cancelling...' : 'Confirm Cancel'}
                 </button>
               </div>
             </div>

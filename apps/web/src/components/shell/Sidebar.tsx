@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { mockStudioContext } from '../../lib/mockData';
+import { TARGET_STUDIO } from '../../lib/constants';
 
 interface SidebarProps {
   onCloseMobile?: () => void;
@@ -150,7 +150,7 @@ export function Sidebar({ onCloseMobile }: SidebarProps) {
               Studio Context
             </span>
             <span className="font-label-md text-label-md text-on-surface font-semibold truncate mt-0.5">
-              {mockStudioContext.name}
+              {TARGET_STUDIO.name}
             </span>
           </div>
           <span className="material-symbols-outlined text-on-surface-variant text-[16px]">
@@ -162,15 +162,15 @@ export function Sidebar({ onCloseMobile }: SidebarProps) {
         <div className="flex items-center justify-between pt-1">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="relative flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center text-on-primary font-headline-sm text-headline-sm font-bold shadow-xs">
-              {mockStudioContext.ownerInitials}
+              {TARGET_STUDIO.ownerInitials}
               <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-secondary-container ring-2 ring-surface-container-lowest" />
             </div>
             <div className="flex flex-col min-w-0">
               <span className="font-label-md text-label-md font-semibold text-on-surface truncate leading-tight">
-                {mockStudioContext.ownerName}
+                {TARGET_STUDIO.ownerName}
               </span>
               <span className="font-label-sm text-label-sm text-on-surface-variant truncate leading-tight">
-                {mockStudioContext.role}
+                {TARGET_STUDIO.role}
               </span>
             </div>
           </div>
