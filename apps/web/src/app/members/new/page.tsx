@@ -40,7 +40,9 @@ export default function NewMemberPage() {
 
       router.push(`/members/${created.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to register member.');
+      setError(
+        err instanceof Error ? err.message : 'Failed to register member.',
+      );
       setSubmitting(false);
     }
   };
@@ -50,11 +52,16 @@ export default function NewMemberPage() {
       <div className="flex flex-col w-full max-w-4xl mx-auto gap-space-lg">
         {/* Breadcrumb & Navigation */}
         <div className="flex items-center gap-2 text-on-surface-variant font-label-md text-label-md">
-          <Link href="/members" className="hover:text-on-surface transition-colors">
+          <Link
+            href="/members"
+            className="hover:text-on-surface transition-colors"
+          >
             Members
           </Link>
           <span>/</span>
-          <span className="text-on-surface font-semibold">New Registration</span>
+          <span className="text-on-surface font-semibold">
+            New Registration
+          </span>
         </div>
 
         {/* Page Header */}
@@ -64,7 +71,8 @@ export default function NewMemberPage() {
               Add New Member
             </h1>
             <p className="font-body-md text-body-md text-on-surface-variant mt-1">
-              Create a member record for class bookings, attendance check-ins, and retention scoring.
+              Create a member record for class bookings, attendance check-ins,
+              and retention scoring.
             </p>
           </div>
         </div>
@@ -82,14 +90,17 @@ export default function NewMemberPage() {
             <div className="flex items-center justify-between pb-3 border-b border-border-delicate">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-surface-container flex items-center justify-center text-primary">
-                  <span className="material-symbols-outlined text-[20px]">badge</span>
+                  <span className="material-symbols-outlined text-[20px]">
+                    badge
+                  </span>
                 </div>
                 <div>
                   <h2 className="font-headline-sm text-headline-sm font-semibold text-on-surface">
                     Basic Identity & Contact Details
                   </h2>
                   <p className="font-body-sm text-body-sm text-on-surface-variant">
-                    Core profile information for roster management and notifications.
+                    Core profile information for roster management and
+                    notifications.
                   </p>
                 </div>
               </div>
@@ -160,14 +171,17 @@ export default function NewMemberPage() {
             <div className="flex items-center justify-between pb-3 border-b border-border-delicate">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-surface-container flex items-center justify-center text-secondary">
-                  <span className="material-symbols-outlined text-[20px]">card_membership</span>
+                  <span className="material-symbols-outlined text-[20px]">
+                    card_membership
+                  </span>
                 </div>
                 <div>
                   <h2 className="font-headline-sm text-headline-sm font-semibold text-on-surface">
                     Initial Membership Pass
                   </h2>
                   <p className="font-body-sm text-body-sm text-on-surface-variant">
-                    Assign a pass or pack to unlock immediate booking and check-in rights.
+                    Assign a pass or pack to unlock immediate booking and
+                    check-in rights.
                   </p>
                 </div>
               </div>
@@ -186,12 +200,24 @@ export default function NewMemberPage() {
                   onChange={(e) => setPlan(e.target.value)}
                   className="w-full px-4 py-2.5 rounded-xl bg-surface-bright border border-border-delicate text-on-surface font-body-md text-body-md focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
                 >
-                  <option value="Unlimited Reformer Monthly">Unlimited Reformer Monthly — ₹12,500/mo</option>
-                  <option value="Mat & Tower 10-Pack">Mat & Tower 10-Pack — ₹8,500 (60 days)</option>
-                  <option value="Monthly All-Access">Monthly All-Access — ₹15,000/mo</option>
-                  <option value="Reformer 8-Pack">Reformer 8-Pack — ₹7,500 (45 days)</option>
-                  <option value="Quarterly Unlimited">Quarterly Unlimited — ₹32,000</option>
-                  <option value="Trial 14-Day Pass">Trial 14-Day Pass — ₹1,999</option>
+                  <option value="Unlimited Reformer Monthly">
+                    Unlimited Reformer Monthly — ₹12,500/mo
+                  </option>
+                  <option value="Mat & Tower 10-Pack">
+                    Mat & Tower 10-Pack — ₹8,500 (60 days)
+                  </option>
+                  <option value="Monthly All-Access">
+                    Monthly All-Access — ₹15,000/mo
+                  </option>
+                  <option value="Reformer 8-Pack">
+                    Reformer 8-Pack — ₹7,500 (45 days)
+                  </option>
+                  <option value="Quarterly Unlimited">
+                    Quarterly Unlimited — ₹32,000
+                  </option>
+                  <option value="Trial 14-Day Pass">
+                    Trial 14-Day Pass — ₹1,999
+                  </option>
                 </select>
               </div>
 
@@ -263,8 +289,10 @@ export default function NewMemberPage() {
           {/* Sticky Action Footer */}
           <div className="sticky bottom-4 z-30 bg-surface-container-lowest/95 backdrop-blur-md rounded-2xl p-5 border border-border-delicate shadow-lg flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2 text-on-surface-variant font-body-sm text-body-sm">
-              <span className="material-symbols-outlined text-[18px] text-outline">lock</span>
-              <span>Drafting member profile for ARS Pilates & Fitness roster.</span>
+              <span className="material-symbols-outlined text-[18px] text-outline">
+                lock
+              </span>
+              <span>Drafting a member profile for your studio.</span>
             </div>
             <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
               <Link
@@ -281,7 +309,9 @@ export default function NewMemberPage() {
                 <span className="material-symbols-outlined text-[18px]">
                   {submitting ? 'hourglass_empty' : 'check'}
                 </span>
-                <span>{submitting ? 'Saving Member...' : 'Register Member'}</span>
+                <span>
+                  {submitting ? 'Saving Member...' : 'Register Member'}
+                </span>
               </button>
             </div>
           </div>

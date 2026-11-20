@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PranaX Solution Architecture & UI Wireframe Flow Map</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  body { background-color: #0F172A; color: #F8FAFC; width: 1920px; height: 1080px; overflow: hidden; padding: 36px 44px; display: flex; flex-direction: column; }
+  
+  header { margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-start; }
+  .title-group h1 { font-size: 26px; font-weight: 800; color: #FFFFFF; letter-spacing: -0.5px; }
+  .title-group p { font-size: 13px; color: #94A3B8; margin-top: 4px; }
+  .legend { display: flex; gap: 14px; align-items: center; background: #1E293B; border: 1px solid #334155; padding: 8px 16px; border-radius: 8px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: #CBD5E1; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+  .canvas-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 24px;
+    position: relative;
+  }
+
+  .screen-card {
+    background: #1E293B;
+    border: 1.5px solid #334155;
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+    position: relative;
+    overflow: hidden;
+  }
+  .screen-card.highlight { border-color: #0D9488; }
+
+  .screen-badge {
+    position: absolute;
+    top: 14px;
+    right: 18px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    background: #0F172A;
+    border: 1px solid #334155;
+    color: #38BDF8;
+    padding: 3px 8px;
+    border-radius: 6px;
+  }
+
+  .screen-title { font-size: 15px; font-weight: 700; color: #FFFFFF; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+  .screen-desc { font-size: 11px; color: #94A3B8; margin-bottom: 12px; }
+
+  /* Wireframe Miniature Elements */
+  .wf-shell {
+    flex: 1;
+    background: #0F172A;
+    border: 1px dashed #475569;
+    border-radius: 8px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    font-size: 11px;
+  }
+
+  .wf-header-bar { height: 28px; background: #1E293B; border-radius: 5px; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; }
+  .wf-kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .wf-kpi-box { background: #1E293B; border: 1px solid #334155; border-radius: 5px; padding: 6px 8px; }
+  .wf-kpi-box b { display: block; font-size: 14px; color: #38BDF8; margin-top: 2px; }
+
+  .wf-table { width: 100%; border-collapse: collapse; font-size: 10px; }
+  .wf-table th { background: #1E293B; color: #94A3B8; padding: 6px 8px; text-align: left; }
+  .wf-table td { padding: 6px 8px; border-bottom: 1px solid #1E293B; color: #E2E8F0; }
+
+  .wf-tag { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 700; }
+  .wf-tag.red { background: rgba(239,68,68,0.2); color: #F87171; border: 1px solid #EF4444; }
+  .wf-tag.amber { background: rgba(245,158,11,0.2); color: #FBBF24; border: 1px solid #F59E0B; }
+  .wf-tag.teal { background: rgba(13,148,136,0.2); color: #2DD4BF; border: 1px solid #0D9488; }
+
+  .wf-form { display: flex; flex-direction: column; gap: 8px; }
+  .wf-field { background: #1E293B; border: 1px solid #475569; border-radius: 4px; padding: 6px 8px; color: #94A3B8; font-size: 10px; }
+  .wf-btn { background: #0D9488; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-weight: 700; font-size: 10px; align-self: flex-start; }
+
+  /* Flow Connectors Overlay */
+  .flow-note {
+    background: #0284C7;
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    box-shadow: 0 4px 10px rgba(2, 132, 199, 0.4);
+  }
+
+  footer {
+    margin-top: 18px;
+    border-top: 1px solid #334155;
+    padding-top: 12px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #64748B;
+  }
+</style>
+</head>
+<body>
+
+  <header>
+    <div class="title-group">
+      <h1>PranaX MVP — Solution Wireframe & Screen Architecture Map</h1>
+      <p>4 Core Application Views, State Transitions & Data Flow Boundaries (16:9 Landscape Specification)</p>
+    </div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background: #0D9488;"></div> P0 Core Workflow</div>
+      <div class="legend-item"><div class="legend-dot" style="background: #38BDF8;"></div> User Interaction</div>
+      <div class="legend-item"><div class="legend-dot" style="background: #F43F5E;"></div> High Risk Alert</div>
+      <div class="legend-item"><div class="legend-dot" style="background: #A855F7;"></div> Gemini AI Copilot</div>
+    </div>
+  </header>
+
+  <div class="canvas-grid">
+
+    <!-- Card 1: Studio Overview Dashboard -->
+    <div class="screen-card highlight">
+      <span class="screen-badge">Screen 01 &bull; DASH-01</span>
+      <div class="screen-title">
+        <svg width="18" height="18" fill="none" stroke="#0D9488" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/></svg>
+        Studio Overview Dashboard (Desktop Shell)
+      </div>
+      <div class="screen-desc">Central executive view: KPI summary, rolling attendance trends & retention risk distribution.</div>
+
+      <div class="wf-shell">
+        <div class="wf-header-bar">
+          <span style="font-weight:700; color:#F1F5F9;">Prana Shala Chelsea &bull; Overview</span>
+          <span class="wf-tag teal">+ Quick Check-in</span>
+        </div>
+        <div class="wf-kpi-row">
+          <div class="wf-kpi-box">Active Members<b>142</b></div>
+          <div class="wf-kpi-box">Visits Today<b>28</b></div>
+          <div class="wf-kpi-box" style="border-color:#EF4444;">High Risk<b style="color:#F87171;">7</b></div>
+          <div class="wf-kpi-box" style="border-color:#F59E0B;">Expiring 7d<b style="color:#FBBF24;">9</b></div>
+        </div>
+        <div style="background:#1E293B; border-radius:5px; padding:8px; display:flex; justify-content:space-between; align-items:center;">
+          <span>Attendance Trend (Mon &rarr; Sun)</span>
+          <span style="color:#38BDF8; font-weight:700;">194 Visits (Deduped)</span>
+        </div>
+        <div style="background:#1E293B; border-radius:5px; padding:6px 8px; display:flex; justify-content:space-between;">
+          <span style="color:#CBD5E1; font-weight:600;">Attention Queue Preview:</span>
+          <span class="wf-tag red">7 Urgent Outreach Needed</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 2: Attendance Check-in & Ingestion -->
+    <div class="screen-card">
+      <span class="screen-badge">Screen 06 &bull; ATT-01</span>
+      <div class="screen-title">
+        <svg width="18" height="18" fill="none" stroke="#38BDF8" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Attendance Check-in & CSV Ingestion Modal
+      </div>
+      <div class="screen-desc">Fast front-desk member search with 1/day idempotency & paused status warnings.</div>
+
+      <div class="wf-shell">
+        <div class="wf-form">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <b style="color:#FFFFFF;">Front Desk Check-in</b>
+            <span style="font-size:9px; color:#94A3B8;">Today: Nov 21 (EST)</span>
+          </div>
+          <input class="wf-field" type="text" value="Sophia Martinez (MEM-0842)" readonly>
+          <div style="background:rgba(245,158,11,0.15); border:1px solid #F59E0B; border-radius:4px; padding:6px; font-size:10px; color:#FDE68A;">
+            &#9888; <b>Status Alert:</b> Annual plan expires in 5 days. Check-in allowed.
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="wf-btn" style="flex:1;">Confirm Check-in</button>
+            <button class="wf-btn" style="background:#334155; color:#CBD5E1;">Cancel</button>
+          </div>
+          <div style="font-size:9px; color:#64748B; border-top:1px dashed #334155; padding-top:6px;">
+            CSV Upload Mode: Supports multi-row batches with duplicate date rejection.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 3: Retention Attention Queue -->
+    <div class="screen-card">
+      <span class="screen-badge">Screen 09 &bull; RET-01</span>
+      <div class="screen-title">
+        <svg width="18" height="18" fill="none" stroke="#F43F5E" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Retention Attention Queue & Next Best Action
+      </div>
+      <div class="screen-desc">Prioritized triage table sorting members by deterministic composite risk score.</div>
+
+      <div class="wf-shell">
+        <table class="wf-table">
+          <thead>
+            <tr>
+              <th>Member</th>
+              <th>Last Visit</th>
+              <th>Score</th>
+              <th>Recommended Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><b>Sophia Martinez</b></td>
+              <td>34d ago</td>
+              <td><span class="wf-tag red">84 HIGH</span></td>
+              <td>Call for 1:1 reformer re-entry</td>
+            </tr>
+            <tr>
+              <td><b>Marcus Chen</b></td>
+              <td>21d ago</td>
+              <td><span class="wf-tag red">76 HIGH</span></td>
+              <td>Send personalized WhatsApp check-in</td>
+            </tr>
+            <tr>
+              <td><b>Elena Rostova</b></td>
+              <td>16d ago</td>
+              <td><span class="wf-tag amber">48 MED</span></td>
+              <td>Recommend favorite Sat Vinyasa</td>
+            </tr>
+          </tbody>
+        </table>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:auto;">
+          <span style="font-size:9px; color:#94A3B8;">Sorted by Score DESC &bull; Multi-Tenant Isolated</span>
+          <span class="flow-note">&#10140; Inspect Evidence</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 4: Member Profile with Retention Evidence Tab -->
+    <div class="screen-card highlight">
+      <span class="screen-badge">Screen 04 & 10 &bull; MEM-04 / RET-04</span>
+      <div class="screen-title">
+        <svg width="18" height="18" fill="none" stroke="#A855F7" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Member Profile & Explainable Retention Evidence Drawer
+      </div>
+      <div class="screen-desc">Full 4-dimension score breakdown with grounded Gemini natural language reasoning.</div>
+
+      <div class="wf-shell">
+        <div style="display:flex; justify-content:space-between; border-bottom:1px solid #334155; padding-bottom:6px;">
+          <div><b style="color:#FFF;">Sophia Martinez</b> <span style="color:#94A3B8;">(Annual Plan)</span></div>
+          <span class="wf-tag red">Risk Score: 84 / 100</span>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:10px;">
+          <div style="background:#1E293B; padding:5px; border-radius:4px;">1. Recency: <b>Subscore 65</b><br><span style="color:#94A3B8;">34 days inactive</span></div>
+          <div style="background:#1E293B; padding:5px; border-radius:4px;">2. Trend: <b>Subscore 70</b><br><span style="color:#94A3B8;">-72% visit drop</span></div>
+          <div style="background:#1E293B; padding:5px; border-radius:4px;">3. Expiry: <b style="color:#EF4444;">Subscore 100</b><br><span style="color:#94A3B8;">Expires in 5 days</span></div>
+          <div style="background:#1E293B; padding:5px; border-radius:4px;">4. Renewal: <b style="color:#38BDF8;">Redistributed</b><br><span style="color:#94A3B8;">&lt;2 historical cycles</span></div>
+        </div>
+        <div style="background:rgba(168,85,247,0.12); border:1px solid #A855F7; border-radius:5px; padding:6px; font-size:10px; color:#E9D5FF;">
+          <b>Gemini AI Narrative:</b> Sophia was a loyal 3x/wk visitor. Inactivity combined with upcoming expiry makes churn imminent.
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    <span>PranaX Architecture & Engineering Blueprint &bull; GeneriX Team</span>
+    <span>Target Resolution: 1920 &times; 1080 (16:9 Landscape) &bull; Desktop First UI</span>
+  </footer>
+
+</body>
+</html>

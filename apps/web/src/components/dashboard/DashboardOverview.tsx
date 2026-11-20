@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import type { DashboardKPIs, PrototypeState } from '../../lib/types';
-import { TARGET_STUDIO } from '../../lib/constants';
+import type { DashboardKPIs } from '../../lib/types';
 import { fetchDashboardData } from '../../lib/api';
+import { useAppSession } from '../shell/AppSession';
 
 const EMPTY_DASHBOARD_KPIS: DashboardKPIs = {
   activeMembers: 0,
@@ -41,18 +41,21 @@ interface DashboardOverviewProps {
   initialData?: DashboardKPIs;
 }
 
-export function DashboardOverview({
-  initialData,
-}: DashboardOverviewProps) {
-  const [state, setState] = useState<PrototypeState>(initialData ? 'active' : 'loading');
+export function DashboardOverview({ initialData }: DashboardOverviewProps) {
+  const [state, setState] = useState<'active' | 'loading' | 'error'>(
+    initialData ? 'active' : 'loading',
+  );
   const [trendMode, setTrendMode] = useState<'daily' | 'monthly'>('daily');
-  const [data, setData] = useState<DashboardKPIs>(initialData ?? EMPTY_DASHBOARD_KPIS);
+  const [data, setData] = useState<DashboardKPIs>(
+    initialData ?? EMPTY_DASHBOARD_KPIS,
+  );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const session = useAppSession();
 
-  const loadData = () => {
+  const loadData = (trendInterval: 'daily' | 'monthly' = trendMode) => {
     setState('loading');
     setErrorMessage(null);
-    fetchDashboardData()
+    fetchDashboardData({ trendInterval })
       .then((result) => {
         setData(result);
         setState('active');
@@ -60,7 +63,9 @@ export function DashboardOverview({
       .catch((err) => {
         console.error('Failed to load dashboard data', err);
         setErrorMessage(
-          err instanceof Error ? err.message : 'Studio telemetries could not synchronize with the cloud database.',
+          err instanceof Error
+            ? err.message
+            : 'Studio telemetries could not synchronize with the cloud database.',
         );
         setState('error');
       });
@@ -71,69 +76,65 @@ export function DashboardOverview({
       setData(initialData);
       setState('active');
     } else {
-      loadData();
+      loadData('daily');
     }
   }, [initialData]);
 
+  const asOfDate = data.asOfDate ?? new Date().toISOString().slice(0, 10);
+  const displayDate = new Date(`${asOfDate}T12:00:00`).toLocaleDateString(
+    'en-IN',
+    {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      timeZone: data.studioTimezone || 'UTC',
+    },
+  );
+  const averageAttendance = data.attendanceTrends.length
+    ? Math.round(
+        data.attendanceTrends.reduce((total, item) => total + item.count, 0) /
+          data.attendanceTrends.length,
+      )
+    : 0;
+  const maxAttendance = Math.max(
+    0,
+    ...data.attendanceTrends.map((item) => item.count),
+  );
+  const chartCeiling = Math.max(4, Math.ceil(maxAttendance / 4) * 4);
+  const chartPoints = data.attendanceTrends.map((item, index) => {
+    const x =
+      data.attendanceTrends.length <= 1
+        ? 395
+        : 40 + (index * 710) / (data.attendanceTrends.length - 1);
+    return {
+      ...item,
+      x,
+      y: 160 - (item.count / chartCeiling) * 135,
+    };
+  });
+
   return (
     <div className="flex flex-col w-full max-w-7xl mx-auto">
-      {/* Interactive Prototype Environment Toolbar */}
-      <div className="w-full bg-surface-card border border-border-delicate px-4 py-2.5 rounded-xl shadow-xs mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-outline text-[18px]">
-            tune
-          </span>
-          <span className="font-label-sm text-label-sm font-semibold uppercase tracking-wider text-text-muted">
-            Prototype Environment States
-          </span>
-        </div>
-        <div className="flex flex-wrap items-center gap-1.5">
-          {(
-            [
-              ['active', 'Active Studio (Default)'],
-              ['empty', 'Empty First-Use'],
-              ['loading', 'Loading Skeleton'],
-              ['partial', 'Partial Data'],
-              ['error', 'Error State'],
-              ['no_ml', 'ML Retention Hidden'],
-            ] as const
-          ).map(([key, label]) => {
-            const isActive = state === key;
-            return (
-              <button
-                key={key}
-                type="button"
-                onClick={() => setState(key)}
-                className={`px-3 py-1 rounded-lg font-label-sm text-label-sm font-semibold transition-all ${
-                  isActive
-                    ? 'bg-primary text-on-primary shadow-xs'
-                    : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container'
-                }`}
-              >
-                {label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
       {/* Error View Banner */}
       {state === 'error' && (
         <div className="w-full bg-error-container text-on-error-container p-space-lg rounded-xl mb-space-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs">
           <div className="flex items-center gap-3">
-            <span className="material-symbols-outlined text-[24px]">cloud_off</span>
+            <span className="material-symbols-outlined text-[24px]">
+              cloud_off
+            </span>
             <div>
               <p className="font-headline-sm text-headline-sm font-bold">
                 Failed to load studio analytics
               </p>
               <p className="font-body-md text-body-md opacity-90">
-                {errorMessage || 'Studio telemetries could not synchronize with the cloud database. Please retry or check connection.'}
+                {errorMessage ||
+                  'Studio telemetries could not synchronize with the cloud database. Please retry or check connection.'}
               </p>
             </div>
           </div>
           <button
             type="button"
-            onClick={loadData}
+            onClick={() => loadData()}
             className="px-4 py-2 rounded-lg bg-error text-on-error font-label-md text-label-md font-semibold hover:opacity-95 shadow-xs transition-opacity shrink-0"
           >
             Retry Sync
@@ -150,10 +151,10 @@ export function DashboardOverview({
             </h1>
             <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-surface-container-high text-on-surface font-label-sm text-label-sm font-medium">
               <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-              <span>{TARGET_STUDIO.name} • {TARGET_STUDIO.branch}</span>
+              <span>{session.studio.name}</span>
             </div>
             <span className="px-2.5 py-0.5 rounded-full bg-sage-tint border border-sage-border text-secondary font-label-sm text-label-sm font-medium">
-              Live Remote Database • Active Studio
+              Your studio workspace
             </span>
           </div>
           <p className="font-body-md text-body-md text-on-surface-variant">
@@ -167,7 +168,7 @@ export function DashboardOverview({
             <span className="material-symbols-outlined text-[16px]">
               calendar_today
             </span>
-            <span className="font-medium text-on-surface">Jun 25, 2026</span>
+            <span className="font-medium text-on-surface">{displayDate}</span>
             <span className="text-on-surface-variant">• Today</span>
           </div>
           <Link
@@ -183,7 +184,9 @@ export function DashboardOverview({
             href="/members/new"
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-on-primary font-label-md text-label-md font-semibold hover:bg-primary-container shadow-xs transition-all"
           >
-            <span className="material-symbols-outlined text-[18px]">person_add</span>
+            <span className="material-symbols-outlined text-[18px]">
+              person_add
+            </span>
             <span>+ Add Member</span>
           </Link>
         </div>
@@ -194,7 +197,10 @@ export function DashboardOverview({
         <div className="flex flex-col gap-space-lg w-full animate-pulse">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-space-md">
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-28 bg-surface-container-high rounded-xl" />
+              <div
+                key={i}
+                className="h-28 bg-surface-container-high rounded-xl"
+              />
             ))}
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-space-lg">
@@ -205,8 +211,8 @@ export function DashboardOverview({
         </div>
       )}
 
-      {/* EMPTY FIRST-USE VIEW */}
-      {state === 'empty' && (
+      {/* Empty studio onboarding */}
+      {state === 'active' && data.totalMembers === 0 && (
         <div className="w-full bg-surface-container-lowest p-12 rounded-xl shadow-xs text-center flex flex-col items-center justify-center min-h-[460px] border border-border-delicate">
           <div className="w-16 h-16 rounded-full bg-surface-container-low flex items-center justify-center text-primary mb-space-md">
             <span className="material-symbols-outlined text-[36px]">
@@ -217,7 +223,9 @@ export function DashboardOverview({
             Welcome to PranaX!
           </h3>
           <p className="font-body-lg text-body-lg text-on-surface-variant max-w-lg mb-space-lg">
-            Your studio workspace is clean and ready. Start by adding your first studio member or logging class visits to unlock live retention triage and attendance analytics.
+            Your studio workspace is clean and ready. Start by adding your first
+            studio member or logging class visits to unlock live retention
+            triage and attendance analytics.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-space-sm">
             <Link
@@ -233,14 +241,14 @@ export function DashboardOverview({
               href="/attendance"
               className="px-space-md py-2.5 rounded-lg bg-surface-container text-on-surface font-label-md text-label-md font-semibold hover:bg-surface-container-high transition-colors"
             >
-              Log Demo Check-In
+              Open Attendance
             </Link>
           </div>
         </div>
       )}
 
-      {/* ACTIVE & PARTIAL VIEWS */}
-      {(state === 'active' || state === 'partial' || state === 'no_ml') && (
+      {/* Live studio data */}
+      {state === 'active' && (
         <div className="flex flex-col gap-space-lg w-full">
           {/* Top 5 KPI Cards Strip */}
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-space-md">
@@ -254,20 +262,22 @@ export function DashboardOverview({
                   Active Members
                 </span>
                 <div className="w-8 h-8 rounded-lg bg-surface-container-low flex items-center justify-center text-primary group-hover:scale-105 transition-transform">
-                  <span className="material-symbols-outlined text-[18px]">group</span>
+                  <span className="material-symbols-outlined text-[18px]">
+                    group
+                  </span>
                 </div>
               </div>
               <div>
                 <div className="flex items-baseline gap-1.5">
                   <span className="font-metric-lg text-metric-lg font-bold text-on-surface">
-                    {state === 'partial' ? 42 : data.activeMembers}
+                    {data.activeMembers}
                   </span>
                   <span className="font-body-sm text-body-sm text-text-muted">
                     members
                   </span>
                 </div>
                 <p className="font-body-sm text-body-sm text-text-muted truncate mt-1">
-                  Out of {state === 'partial' ? 50 : data.totalMembers} total registered
+                  Out of {data.totalMembers} total registered
                 </p>
               </div>
             </Link>
@@ -282,20 +292,22 @@ export function DashboardOverview({
                   New Registrations
                 </span>
                 <div className="w-8 h-8 rounded-lg bg-sage-tint flex items-center justify-center text-secondary group-hover:scale-105 transition-transform">
-                  <span className="material-symbols-outlined text-[18px]">person_add</span>
+                  <span className="material-symbols-outlined text-[18px]">
+                    person_add
+                  </span>
                 </div>
               </div>
               <div>
                 <div className="flex items-baseline gap-1.5">
                   <span className="font-metric-lg text-metric-lg font-bold text-on-surface">
-                    {state === 'partial' ? 3 : data.newRegistrations}
+                    {data.newRegistrations}
                   </span>
                   <span className="px-1.5 py-0.5 rounded bg-sage-tint text-secondary font-label-sm text-label-sm font-semibold">
                     new
                   </span>
                 </div>
                 <p className="font-body-sm text-body-sm text-text-muted truncate mt-1">
-                  Selected period (June 2026)
+                  In the last 30 days
                 </p>
               </div>
             </Link>
@@ -310,20 +322,22 @@ export function DashboardOverview({
                   Attendance Today
                 </span>
                 <div className="w-8 h-8 rounded-lg bg-surface-container-low flex items-center justify-center text-primary group-hover:scale-105 transition-transform">
-                  <span className="material-symbols-outlined text-[18px]">event_seat</span>
+                  <span className="material-symbols-outlined text-[18px]">
+                    event_seat
+                  </span>
                 </div>
               </div>
               <div>
                 <div className="flex items-baseline gap-1.5">
                   <span className="font-metric-lg text-metric-lg font-bold text-on-surface">
-                    {state === 'partial' ? 8 : data.attendanceToday}
+                    {data.attendanceToday}
                   </span>
                   <span className="font-body-sm text-body-sm text-text-muted">
                     unique members
                   </span>
                 </div>
                 <p className="font-body-sm text-body-sm text-text-muted truncate mt-1">
-                  Across 6 reformer & mat blocks
+                  Unique member visits today
                 </p>
               </div>
             </Link>
@@ -338,13 +352,15 @@ export function DashboardOverview({
                   High-Risk Members
                 </span>
                 <div className="w-8 h-8 rounded-lg bg-rose-tint flex items-center justify-center text-rose-soft group-hover:scale-105 transition-transform">
-                  <span className="material-symbols-outlined text-[18px]">warning</span>
+                  <span className="material-symbols-outlined text-[18px]">
+                    warning
+                  </span>
                 </div>
               </div>
               <div>
                 <div className="flex items-baseline gap-1.5">
                   <span className="font-metric-lg text-metric-lg font-bold text-rose-soft">
-                    {state === 'partial' ? 1 : data.highRiskCount}
+                    {data.highRiskCount}
                   </span>
                   <span className="px-1.5 py-0.5 rounded bg-rose-tint text-rose-text font-label-sm text-label-sm font-medium">
                     triaged
@@ -374,14 +390,14 @@ export function DashboardOverview({
               <div>
                 <div className="flex items-baseline gap-1.5">
                   <span className="font-metric-lg text-metric-lg font-bold text-on-surface">
-                    {state === 'partial' ? 2 : data.expiringIn7Days}
+                    {data.expiringIn7Days}
                   </span>
                   <span className="font-body-sm text-body-sm text-text-muted">
                     renewals
                   </span>
                 </div>
                 <p className="font-body-sm text-body-sm text-text-muted truncate mt-1">
-                  Due by July 2, 2026
+                  Due within the next 7 days
                 </p>
               </div>
             </Link>
@@ -413,22 +429,30 @@ export function DashboardOverview({
                 <div className="w-full h-2.5 rounded-full bg-surface-container-low overflow-hidden flex gap-0.5 mb-space-lg">
                   <div
                     className="h-full bg-secondary"
-                    style={{ width: `${data.membershipBreakdown.activePercent}%` }}
+                    style={{
+                      width: `${data.membershipBreakdown.activePercent}%`,
+                    }}
                     title={`Active: ${data.membershipBreakdown.activePercent}%`}
                   />
                   <div
                     className="h-full bg-outline-variant"
-                    style={{ width: `${data.membershipBreakdown.pausedPercent}%` }}
+                    style={{
+                      width: `${data.membershipBreakdown.pausedPercent}%`,
+                    }}
                     title={`Paused: ${data.membershipBreakdown.pausedPercent}%`}
                   />
                   <div
                     className="h-full bg-tertiary-container"
-                    style={{ width: `${data.membershipBreakdown.expiringPercent}%` }}
+                    style={{
+                      width: `${data.membershipBreakdown.expiringPercent}%`,
+                    }}
                     title={`Expiring: ${data.membershipBreakdown.expiringPercent}%`}
                   />
                   <div
                     className="h-full bg-error"
-                    style={{ width: `${data.membershipBreakdown.expiredPercent}%` }}
+                    style={{
+                      width: `${data.membershipBreakdown.expiredPercent}%`,
+                    }}
                     title={`Expired: ${data.membershipBreakdown.expiredPercent}%`}
                   />
                 </div>
@@ -532,7 +556,8 @@ export function DashboardOverview({
                       </h2>
                     </div>
                     <p className="font-body-sm text-body-sm text-on-surface-variant">
-                      Unique member studio check-ins across operating calendar days.
+                      Unique member studio check-ins across operating calendar
+                      days.
                     </p>
                   </div>
 
@@ -541,7 +566,10 @@ export function DashboardOverview({
                     <div className="flex bg-surface-container p-0.5 rounded-lg text-on-surface-variant font-label-sm text-label-sm font-semibold">
                       <button
                         type="button"
-                        onClick={() => setTrendMode('daily')}
+                        onClick={() => {
+                          setTrendMode('daily');
+                          loadData('daily');
+                        }}
                         className={`px-2.5 py-1 rounded transition-colors ${
                           trendMode === 'daily'
                             ? 'bg-surface-container-lowest text-primary shadow-xs'
@@ -552,7 +580,10 @@ export function DashboardOverview({
                       </button>
                       <button
                         type="button"
-                        onClick={() => setTrendMode('monthly')}
+                        onClick={() => {
+                          setTrendMode('monthly');
+                          loadData('monthly');
+                        }}
                         className={`px-2.5 py-1 rounded transition-colors ${
                           trendMode === 'monthly'
                             ? 'bg-surface-container-lowest text-primary shadow-xs'
@@ -563,97 +594,121 @@ export function DashboardOverview({
                       </button>
                     </div>
                     <span className="px-2.5 py-1 bg-surface-container-low rounded-lg font-label-sm text-label-sm text-on-surface-variant">
-                      Jun 1 - Jun 25, 2026
+                      {trendMode === 'daily'
+                        ? 'Last 14 days'
+                        : 'Last 12 months'}
                     </span>
                   </div>
                 </div>
 
-                {/* Inline SVG Chart */}
-                <div className="w-full h-56 relative pt-4 pb-2">
-                  <svg
-                    className="w-full h-full overflow-visible"
-                    preserveAspectRatio="none"
-                    viewBox="0 0 760 180"
-                  >
-                    <defs>
-                      <linearGradient
-                        id="attendanceGradient"
-                        x1="0"
-                        x2="0"
-                        y1="0"
-                        y2="1"
-                      >
-                        <stop
-                          offset="0%"
-                          stopColor="#0053cd"
-                          stopOpacity="0.22"
+                {/* Data-driven attendance chart */}
+                <div className="relative h-56 w-full pt-4 pb-2">
+                  {chartPoints.every((point) => point.count === 0) ? (
+                    <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-border-delicate bg-surface-bright px-6 text-center">
+                      <div>
+                        <span className="material-symbols-outlined text-3xl text-outline">
+                          show_chart
+                        </span>
+                        <p className="mt-2 font-label-md text-label-md font-semibold text-on-surface">
+                          No attendance recorded in this period
+                        </p>
+                        <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">
+                          Check-ins will appear here as your studio records
+                          visits.
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <svg
+                      aria-label={`${trendMode === 'daily' ? 'Daily' : 'Monthly'} attendance trend`}
+                      className="h-full w-full overflow-visible"
+                      preserveAspectRatio="none"
+                      role="img"
+                      viewBox="0 0 760 180"
+                    >
+                      {[0, 1, 2, 3, 4].map((step) => {
+                        const y = 160 - step * 35;
+                        const tickValue = Math.round((chartCeiling * step) / 4);
+                        return (
+                          <g key={step}>
+                            <line
+                              stroke="#E3E9F3"
+                              strokeDasharray={step === 0 ? undefined : '3 3'}
+                              strokeWidth="1"
+                              x1="40"
+                              x2="750"
+                              y1={y}
+                              y2={y}
+                            />
+                            <text
+                              fill="#737786"
+                              fontFamily="Inter"
+                              fontSize="10"
+                              textAnchor="end"
+                              x="32"
+                              y={y + 3}
+                            >
+                              {tickValue}
+                            </text>
+                          </g>
+                        );
+                      })}
+                      {chartPoints.map((point) => {
+                        const height = (point.count / chartCeiling) * 135;
+                        const barWidth = Math.min(
+                          28,
+                          560 / Math.max(chartPoints.length, 1),
+                        );
+                        return (
+                          <rect
+                            key={point.date}
+                            fill="#9cb9fb"
+                            height={height}
+                            rx="3"
+                            width={barWidth}
+                            x={point.x - barWidth / 2}
+                            y={160 - height}
+                          />
+                        );
+                      })}
+                      {chartPoints.length > 1 && (
+                        <polyline
+                          fill="none"
+                          points={chartPoints
+                            .map((point) => `${point.x},${point.y}`)
+                            .join(' ')}
+                          stroke="#0757d5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2.5"
                         />
-                        <stop
-                          offset="100%"
-                          stopColor="#0053cd"
-                          stopOpacity="0.00"
-                        />
-                      </linearGradient>
-                    </defs>
-
-                    {/* Horizontal Guide Lines */}
-                    <line stroke="#E3E9F3" strokeWidth="1" x1="40" x2="750" y1="160" y2="160" />
-                    <line stroke="#E3E9F3" strokeDasharray="3 3" strokeWidth="1" x1="40" x2="750" y1="125" y2="125" />
-                    <line stroke="#E3E9F3" strokeDasharray="3 3" strokeWidth="1" x1="40" x2="750" y1="90" y2="90" />
-                    <line stroke="#E3E9F3" strokeDasharray="3 3" strokeWidth="1" x1="40" x2="750" y1="55" y2="55" />
-                    <line stroke="#E3E9F3" strokeDasharray="3 3" strokeWidth="1" x1="40" x2="750" y1="20" y2="20" />
-
-                    {/* Y-Axis Ticks */}
-                    <text fill="#737786" fontFamily="Inter" fontSize="10" textAnchor="end" x="32" y="163">0</text>
-                    <text fill="#737786" fontFamily="Inter" fontSize="10" textAnchor="end" x="32" y="128">10</text>
-                    <text fill="#737786" fontFamily="Inter" fontSize="10" textAnchor="end" x="32" y="93">20</text>
-                    <text fill="#737786" fontFamily="Inter" fontSize="10" textAnchor="end" x="32" y="58">30</text>
-                    <text fill="#737786" fontFamily="Inter" fontSize="10" textAnchor="end" x="32" y="23">40</text>
-
-                    {/* Muted background daily bars */}
-                    <rect fill="#e9edff" height="90" rx="3" width="12" x="70" y="70" />
-                    <rect fill="#e9edff" height="105" rx="3" width="12" x="135" y="55" />
-                    <rect fill="#e9edff" height="98" rx="3" width="12" x="200" y="62" />
-                    <rect fill="#e9edff" height="112" rx="3" width="12" x="265" y="48" />
-                    <rect fill="#e9edff" height="80" rx="3" width="12" x="330" y="80" />
-                    <rect fill="#e9edff" height="118" rx="3" width="12" x="395" y="42" />
-                    <rect fill="#e9edff" height="110" rx="3" width="12" x="460" y="50" />
-                    <rect fill="#e9edff" height="122" rx="3" width="12" x="525" y="38" />
-                    <rect fill="#e9edff" height="100" rx="3" width="12" x="590" y="60" />
-                    <rect fill="#b2c5ff" height="144" rx="3" width="12" x="655" y="16" />
-                    <rect fill="#0053cd" height="128" rx="3" width="12" x="715" y="32" />
-
-                    {/* Smooth Area Gradient & Trend Line */}
-                    <path
-                      d="M 76,70 C 135,55 170,62 206,62 C 240,62 250,48 271,48 C 300,48 315,80 336,80 C 370,80 380,42 401,42 C 430,42 445,50 466,50 C 500,50 510,38 531,38 C 560,38 575,60 596,60 C 630,60 640,16 661,16 C 690,16 700,32 721,32 L 721,160 L 76,160 Z"
-                      fill="url(#attendanceGradient)"
-                    />
-                    <path
-                      d="M 76,70 C 135,55 170,62 206,62 C 240,62 250,48 271,48 C 300,48 315,80 336,80 C 370,80 380,42 401,42 C 430,42 445,50 466,50 C 500,50 510,38 531,38 C 560,38 575,60 596,60 C 630,60 640,16 661,16 C 690,16 700,32 721,32"
-                      fill="none"
-                      stroke="#0053cd"
-                      strokeLinecap="round"
-                      strokeWidth="2.5"
-                    />
-
-                    {/* Peak indicator on Wed Jun 24 (46 attendees) */}
-                    <circle cx="661" cy="16" fill="#0053cd" r="4.5" stroke="#ffffff" strokeWidth="2" />
-                    <rect fill="#001848" height="18" rx="4" width="62" x="630" y="-8" />
-                    <text fill="#ffffff" fontFamily="Inter" fontSize="9" fontWeight="700" textAnchor="middle" x="661" y="4">
-                      Peak: 46
-                    </text>
-
-                    {/* Today Jun 25 indicator */}
-                    <circle cx="721" cy="32" fill="#256cf3" r="5" stroke="#ffffff" strokeWidth="2" />
-
-                    {/* X-Axis Labels */}
-                    <text fill="#737786" fontFamily="Inter" fontSize="10" textAnchor="middle" x="76" y="176">Jun 03</text>
-                    <text fill="#737786" fontFamily="Inter" fontSize="10" textAnchor="middle" x="206" y="176">Jun 08</text>
-                    <text fill="#737786" fontFamily="Inter" fontSize="10" textAnchor="middle" x="336" y="176">Jun 13</text>
-                    <text fill="#737786" fontFamily="Inter" fontSize="10" textAnchor="middle" x="466" y="176">Jun 18</text>
-                    <text fill="#737786" fontFamily="Inter" fontSize="10" textAnchor="middle" x="596" y="176">Jun 23</text>
-                    <text fill="#0053cd" fontFamily="Inter" fontSize="10" fontWeight="600" textAnchor="middle" x="721" y="176">Today (25)</text>
-                  </svg>
+                      )}
+                      {chartPoints.map((point, index) => {
+                        const labelStep = Math.max(
+                          1,
+                          Math.ceil(chartPoints.length / 5),
+                        );
+                        if (
+                          index % labelStep !== 0 &&
+                          index !== chartPoints.length - 1
+                        )
+                          return null;
+                        return (
+                          <text
+                            key={point.date}
+                            fill="#737786"
+                            fontFamily="Inter"
+                            fontSize="10"
+                            textAnchor="middle"
+                            x={point.x}
+                            y="176"
+                          >
+                            {point.label}
+                          </text>
+                        );
+                      })}
+                    </svg>
+                  )}
                 </div>
               </div>
 
@@ -664,18 +719,21 @@ export function DashboardOverview({
                     info
                   </span>
                   <span>
-                    Attendance metrics represent unique member studio visits per calendar day (not double-counting back-to-back blocks).
+                    {trendMode === 'daily'
+                      ? 'Daily totals count unique member visits for each studio-local calendar date.'
+                      : 'Monthly totals count member attendance days within each studio-local month.'}
                   </span>
                 </div>
                 <span className="font-label-sm text-label-sm font-semibold text-secondary">
-                  Studio Avg: 36/day
+                  Average: {averageAttendance}{' '}
+                  {trendMode === 'daily' ? 'visits/day' : 'visits/month'}
                 </span>
               </div>
             </div>
           </div>
 
           {/* Retention Health Overview & Attention Queue (unless hidden via state) */}
-          {state !== 'no_ml' && (
+          {
             <div className="flex flex-col gap-space-lg w-full">
               {/* Retention Health Overview Strip */}
               <div className="w-full bg-surface-container-lowest p-space-lg rounded-xl border border-border-delicate shadow-xs">
@@ -693,10 +751,12 @@ export function DashboardOverview({
                       </span>
                     </div>
                     <p className="font-body-sm text-body-sm text-text-muted mt-1">
-                      Retention Score is an operational prioritization score to triage member outreach,{' '}
+                      Retention Score is an operational prioritization score to
+                      triage member outreach,{' '}
                       <span className="font-medium text-on-surface">
                         NOT a predictive probability of churn
-                      </span>.
+                      </span>
+                      .
                     </p>
                   </div>
                   <Link
@@ -829,7 +889,8 @@ export function DashboardOverview({
                       </span>
                     </div>
                     <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">
-                      Members prioritized by attendance drops and lifecycle thresholds for staff follow-up.
+                      Members prioritized by attendance drops and lifecycle
+                      thresholds for staff follow-up.
                     </p>
                   </div>
                   <Link
@@ -851,13 +912,20 @@ export function DashboardOverview({
                         <th className="pb-3 font-semibold">Status / Plan</th>
                         <th className="pb-3 font-semibold">Risk Level</th>
                         <th className="pb-3 font-semibold">Cadence Signal</th>
-                        <th className="pb-3 font-semibold">Primary Recommendation</th>
-                        <th className="pb-3 font-semibold text-right">Actions</th>
+                        <th className="pb-3 font-semibold">
+                          Primary Recommendation
+                        </th>
+                        <th className="pb-3 font-semibold text-right">
+                          Actions
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border-delicate font-body-md text-body-md">
                       {data.attentionQueue.map((item) => (
-                        <tr key={item.memberId} className="hover:bg-surface-bright transition-colors">
+                        <tr
+                          key={item.memberId}
+                          className="hover:bg-surface-bright transition-colors"
+                        >
                           <td className="py-3.5 pr-4">
                             <div className="flex items-center gap-2.5">
                               <div className="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center font-bold text-label-sm text-on-surface">
@@ -907,7 +975,7 @@ export function DashboardOverview({
                 </div>
               </div>
             </div>
-          )}
+          }
         </div>
       )}
     </div>

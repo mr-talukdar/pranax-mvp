@@ -9,7 +9,11 @@ export type StudioContextInfo = {
   isSynthetic: boolean;
 };
 
-export type MembershipStatusType = 'ACTIVE' | 'PAUSED' | 'EXPIRED' | 'CANCELLED';
+export type MembershipStatusType =
+  | 'ACTIVE'
+  | 'PAUSED'
+  | 'EXPIRED'
+  | 'CANCELLED';
 
 export type MemberSummary = {
   id: string;
@@ -108,6 +112,6 @@ export type DashboardKPIs = {
     limitedPercent: number;
   };
   attentionQueue: AttentionQueueItem[];
+  studioTimezone?: string;
+  asOfDate?: string;
 };
-
-export type PrototypeState = 'active' | 'empty' | 'loading' | 'partial' | 'error' | 'no_ml';

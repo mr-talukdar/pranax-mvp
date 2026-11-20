@@ -2,21 +2,23 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { TARGET_STUDIO } from '../../lib/constants';
+import { getInitials, type AppSession } from './AppSession';
 
 interface SidebarProps {
+  session: AppSession;
+  onSignOut: () => void;
   onCloseMobile?: () => void;
 }
 
-export function Sidebar({ onCloseMobile }: SidebarProps) {
+export function Sidebar({ session, onSignOut, onCloseMobile }: SidebarProps) {
   const pathname = usePathname();
 
   const navItems = [
     {
       name: 'Overview',
-      href: '/',
+      href: '/dashboard',
       icon: 'dashboard',
-      active: pathname === '/',
+      active: pathname === '/dashboard',
     },
     {
       name: 'Members',
@@ -34,8 +36,6 @@ export function Sidebar({ onCloseMobile }: SidebarProps) {
       name: 'Retention',
       href: '/retention',
       icon: 'ecg_heart',
-      badge: '3',
-      badgeClass: 'bg-rose-tint text-rose-soft font-semibold',
       active: pathname.startsWith('/retention'),
     },
     {
@@ -44,7 +44,8 @@ export function Sidebar({ onCloseMobile }: SidebarProps) {
       icon: 'auto_awesome',
       iconClass: 'text-tertiary',
       badge: 'Beta',
-      badgeClass: 'bg-tertiary-fixed text-on-tertiary-fixed font-semibold uppercase',
+      badgeClass:
+        'bg-tertiary-fixed text-on-tertiary-fixed font-semibold uppercase',
       active: false,
     },
   ];
@@ -55,7 +56,7 @@ export function Sidebar({ onCloseMobile }: SidebarProps) {
         {/* Brand header */}
         <div className="h-16 px-space-md flex items-center justify-between border-b border-outline-variant/30">
           <Link
-            href="/"
+            href="/dashboard"
             onClick={onCloseMobile}
             className="flex items-center gap-2.5 min-w-0 group"
           >
@@ -76,7 +77,9 @@ export function Sidebar({ onCloseMobile }: SidebarProps) {
               onClick={onCloseMobile}
               className="lg:hidden p-1 rounded-md text-on-surface-variant hover:bg-surface-container"
             >
-              <span className="material-symbols-outlined text-[20px]">close</span>
+              <span className="material-symbols-outlined text-[20px]">
+                close
+              </span>
             </button>
           )}
         </div>
@@ -139,7 +142,9 @@ export function Sidebar({ onCloseMobile }: SidebarProps) {
               : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
           }`}
         >
-          <span className="material-symbols-outlined text-[19px]">settings</span>
+          <span className="material-symbols-outlined text-[19px]">
+            settings
+          </span>
           <span>Settings</span>
         </Link>
 
@@ -150,7 +155,7 @@ export function Sidebar({ onCloseMobile }: SidebarProps) {
               Studio Context
             </span>
             <span className="font-label-md text-label-md text-on-surface font-semibold truncate mt-0.5">
-              {TARGET_STUDIO.name}
+              {session.studio.name}
             </span>
           </div>
           <span className="material-symbols-outlined text-on-surface-variant text-[16px]">
@@ -162,24 +167,27 @@ export function Sidebar({ onCloseMobile }: SidebarProps) {
         <div className="flex items-center justify-between pt-1">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="relative flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center text-on-primary font-headline-sm text-headline-sm font-bold shadow-xs">
-              {TARGET_STUDIO.ownerInitials}
+              {getInitials(session.user.name)}
               <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-secondary-container ring-2 ring-surface-container-lowest" />
             </div>
             <div className="flex flex-col min-w-0">
               <span className="font-label-md text-label-md font-semibold text-on-surface truncate leading-tight">
-                {TARGET_STUDIO.ownerName}
+                {session.user.name}
               </span>
               <span className="font-label-sm text-label-sm text-on-surface-variant truncate leading-tight">
-                {TARGET_STUDIO.role}
+                {session.studio.role}
               </span>
             </div>
           </div>
           <button
+            onClick={onSignOut}
             className="p-1.5 rounded-lg text-on-surface-variant hover:text-error hover:bg-error-container/40 transition-colors"
             title="Sign out"
             type="button"
           >
-            <span className="material-symbols-outlined text-[18px]">logout</span>
+            <span className="material-symbols-outlined text-[18px]">
+              logout
+            </span>
           </button>
         </div>
       </div>

@@ -6,7 +6,8 @@ export const dashboardQuerySchema = z.object({
   asOfDate: dateSchema.optional(),
   registrationWindowDays: z.coerce.number().int().positive().default(30),
   upcomingExpirationDays: z.coerce.number().int().positive().default(7),
-  trendDays: z.coerce.number().int().positive().default(14),
+  trendDays: z.coerce.number().int().positive().max(366).default(14),
+  trendMonths: z.coerce.number().int().positive().max(36).default(12),
   trendInterval: z.enum(['daily', 'monthly']).default('daily'),
 });
 
@@ -47,8 +48,14 @@ export const retentionSummarySchema = z.object({
 
 export type RetentionSummary = z.infer<typeof retentionSummarySchema>;
 
-export const attentionQueueCategorySchema = z.enum(['HIGH', 'MEDIUM', 'LIMITED']);
-export type AttentionQueueCategory = z.infer<typeof attentionQueueCategorySchema>;
+export const attentionQueueCategorySchema = z.enum([
+  'HIGH',
+  'MEDIUM',
+  'LIMITED',
+]);
+export type AttentionQueueCategory = z.infer<
+  typeof attentionQueueCategorySchema
+>;
 
 export const attentionQueueItemSchema = z.object({
   memberId: z.string().uuid(),
@@ -63,7 +70,9 @@ export const attentionQueueItemSchema = z.object({
   keyFactors: z.array(z.string()),
 });
 
-export type AttentionQueueItemContract = z.infer<typeof attentionQueueItemSchema>;
+export type AttentionQueueItemContract = z.infer<
+  typeof attentionQueueItemSchema
+>;
 
 export const mlInsightsSchema = z.object({
   enabled: z.boolean(),

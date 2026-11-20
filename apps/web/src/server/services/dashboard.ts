@@ -29,8 +29,18 @@ export function formatTrendLabel(dateUtc: Date, isToday: boolean): string {
     return `Today (${day})`;
   }
   const monthNames = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
   const month = monthNames[dateUtc.getUTCMonth()];
   const formattedDay = day < 10 ? `0${day}` : `${day}`;
@@ -110,10 +120,7 @@ export async function getDashboardSummary(
           pauses: {
             where: {
               startsAt: { lte: todayUtc },
-              OR: [
-                { resumesAt: null },
-                { resumesAt: { gt: todayUtc } },
-              ],
+              OR: [{ resumesAt: null }, { resumesAt: { gt: todayUtc } }],
             },
           },
         },
@@ -169,10 +176,14 @@ export async function getDashboardSummary(
       const membershipBreakdown = {
         active: activeCount,
         activePercent:
-          totalBreakdown > 0 ? Math.round((activeCount / totalBreakdown) * 100) : 0,
+          totalBreakdown > 0
+            ? Math.round((activeCount / totalBreakdown) * 100)
+            : 0,
         paused: pausedCount,
         pausedPercent:
-          totalBreakdown > 0 ? Math.round((pausedCount / totalBreakdown) * 100) : 0,
+          totalBreakdown > 0
+            ? Math.round((pausedCount / totalBreakdown) * 100)
+            : 0,
         expiring: expiringCount,
         expiringPercent:
           totalBreakdown > 0
@@ -185,11 +196,19 @@ export async function getDashboardSummary(
             : 0,
       };
 
-      // 5. Attendance Trends (Daily sequence zero-filled)
-      const trendDays = query?.trendDays ?? 14;
-      const trendStartUtc = new Date(
-        todayUtc.getTime() - (trendDays - 1) * 86_400_000,
-      );
+      // 5. Attendance Trends (zero-filled in the selected studio-local interval)
+      const trendStartUtc =
+        queryParams.trendInterval === 'daily'
+          ? new Date(
+              todayUtc.getTime() - (queryParams.trendDays - 1) * 86_400_000,
+            )
+          : new Date(
+              Date.UTC(
+                Number(asOfDateStr.slice(0, 4)),
+                Number(asOfDateStr.slice(5, 7)) - queryParams.trendMonths,
+                1,
+              ),
+            );
 
       const attendanceRecords = await tx.attendanceRecord.findMany({
         where: {
@@ -205,10 +224,14 @@ export async function getDashboardSummary(
         },
       });
 
-      // Count unique check-ins per calendar date (Prisma Date is UTC midnight)
+      // AttendanceRecord is unique per member per studio-local day.
       const attendanceCountByDate = new Map<string, number>();
       for (const record of attendanceRecords) {
-        const dStr = record.localDate.toISOString().slice(0, 10);
+        const localDate = record.localDate.toISOString().slice(0, 10);
+        const dStr =
+          queryParams.trendInterval === 'daily'
+            ? localDate
+            : localDate.slice(0, 7);
         attendanceCountByDate.set(
           dStr,
           (attendanceCountByDate.get(dStr) ?? 0) + 1,
@@ -216,25 +239,37 @@ export async function getDashboardSummary(
       }
 
       const attendanceTrends = [];
-      for (let i = trendDays - 1; i >= 0; i--) {
-        const dateObj = new Date(todayUtc.getTime() - i * 86_400_000);
-        const dStr = dateObj.toISOString().slice(0, 10);
-        const count = attendanceCountByDate.get(dStr) ?? 0;
-        const isToday = i === 0;
-        attendanceTrends.push({
-          date: dStr,
-          label: formatTrendLabel(dateObj, isToday),
-          count,
-        });
+      if (queryParams.trendInterval === 'daily') {
+        for (let i = queryParams.trendDays - 1; i >= 0; i--) {
+          const dateObj = new Date(todayUtc.getTime() - i * 86_400_000);
+          const dStr = dateObj.toISOString().slice(0, 10);
+          attendanceTrends.push({
+            date: dStr,
+            label: formatTrendLabel(dateObj, i === 0),
+            count: attendanceCountByDate.get(dStr) ?? 0,
+          });
+        }
+      } else {
+        const [asOfYear, asOfMonth] = asOfDateStr.split('-').map(Number);
+        for (let i = queryParams.trendMonths - 1; i >= 0; i--) {
+          const dateObj = new Date(Date.UTC(asOfYear, asOfMonth - 1 - i, 1));
+          const monthKey = dateObj.toISOString().slice(0, 7);
+          attendanceTrends.push({
+            date: `${monthKey}-01`,
+            label: dateObj.toLocaleDateString('en-US', {
+              month: 'short',
+              year: '2-digit',
+              timeZone: 'UTC',
+            }),
+            count: attendanceCountByDate.get(monthKey) ?? 0,
+          });
+        }
       }
 
       // 6. Retention Overview & 7. Attention Queue
       const snapshots = await tx.retentionSnapshot.findMany({
         where: { studioId: context.studioId },
-        orderBy: [
-          { snapshotDate: 'desc' },
-          { createdAt: 'desc' },
-        ],
+        orderBy: [{ snapshotDate: 'desc' }, { createdAt: 'desc' }],
         include: {
           member: {
             select: {
@@ -264,12 +299,18 @@ export async function getDashboardSummary(
       // Deduplicate to latest snapshot per member (ensuring order by snapshotDate desc, createdAt desc)
       const sortedSnapshots = [...snapshots].sort((a, b) => {
         const dateDiff =
-          new Date(b.snapshotDate).getTime() - new Date(a.snapshotDate).getTime();
+          new Date(b.snapshotDate).getTime() -
+          new Date(a.snapshotDate).getTime();
         if (dateDiff !== 0) return dateDiff;
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        return (
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
       });
 
-      const latestSnapshotByMember = new Map<string, (typeof snapshots)[number]>();
+      const latestSnapshotByMember = new Map<
+        string,
+        (typeof snapshots)[number]
+      >();
       for (const s of sortedSnapshots) {
         if (!latestSnapshotByMember.has(s.memberId)) {
           latestSnapshotByMember.set(s.memberId, s);
@@ -316,7 +357,9 @@ export async function getDashboardSummary(
             const lastDate = new Date(mem.attendanceRecords[0].localDate);
             daysAbsent = Math.max(
               0,
-              Math.floor((todayUtc.getTime() - lastDate.getTime()) / 86_400_000),
+              Math.floor(
+                (todayUtc.getTime() - lastDate.getTime()) / 86_400_000,
+              ),
             );
           } else if (mem.joinedAt) {
             daysAbsent = Math.max(
@@ -402,7 +445,8 @@ export async function getDashboardSummary(
       };
 
       attentionCandidates.sort((a, b) => {
-        const catDiff = categoryPriority[b.category] - categoryPriority[a.category];
+        const catDiff =
+          categoryPriority[b.category] - categoryPriority[a.category];
         if (catDiff !== 0) return catDiff;
         const scoreDiff = b.score - a.score;
         if (scoreDiff !== 0) return scoreDiff;
@@ -416,13 +460,17 @@ export async function getDashboardSummary(
           totalAssessed > 0 ? Math.round((lowCount / totalAssessed) * 100) : 0,
         mediumCount,
         mediumPercent:
-          totalAssessed > 0 ? Math.round((mediumCount / totalAssessed) * 100) : 0,
+          totalAssessed > 0
+            ? Math.round((mediumCount / totalAssessed) * 100)
+            : 0,
         highCount,
         highPercent:
           totalAssessed > 0 ? Math.round((highCount / totalAssessed) * 100) : 0,
         limitedCount,
         limitedPercent:
-          totalAssessed > 0 ? Math.round((limitedCount / totalAssessed) * 100) : 0,
+          totalAssessed > 0
+            ? Math.round((limitedCount / totalAssessed) * 100)
+            : 0,
       };
 
       // 8. ML Insights (Optional DASH-06)
@@ -441,7 +489,10 @@ export async function getDashboardSummary(
 
       const mlInsights = {
         enabled: churnPredictionsCount > 0,
-        modelStatus: churnPredictionsCount > 0 ? ('ACTIVE' as const) : ('DISABLED' as const),
+        modelStatus:
+          churnPredictionsCount > 0
+            ? ('ACTIVE' as const)
+            : ('DISABLED' as const),
         highRiskChurnCount,
       };
 

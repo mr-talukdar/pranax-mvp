@@ -1,17 +1,25 @@
-import { randomBytes, randomUUID } from 'node:crypto';
-import { chmodSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  writeFileSync,
+} from 'node:fs';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 import { prisma, withVerifiedStudioContext } from '@pranax/database';
 
 const TARGET_STUDIO_ID = 'd9b73462-1111-4000-8000-000000000001';
 const TARGET_STUDIO_NAME = 'ARS Pilates & Fitness';
-const DEMO_EMAIL = 'demo-owner@ars-pilates.example.invalid';
-
-function generateSecurePassword() {
-  const bytes = randomBytes(24).toString('base64');
-  return `PranaX!${bytes}$9A`;
-}
+const demoCredentials = JSON.parse(
+  readFileSync(
+    new URL('../public/demo-credentials.json', import.meta.url),
+    'utf8',
+  ),
+);
+const DEMO_EMAIL = demoCredentials.email;
+const DEMO_PASSWORD = demoCredentials.password;
 
 function decodeJwtPayload(token) {
   const parts = token.split('.');
@@ -31,26 +39,30 @@ async function run() {
     throw new Error('Required Supabase environment variables are missing.');
   }
 
-  console.log('[1/5] Inspecting Supabase configuration and existing Auth users...');
+  console.log(
+    '[1/5] Inspecting Supabase configuration and existing Auth users...',
+  );
   const adminClient = createClient(supabaseUrl, serviceRoleKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  const { data: usersData, error: listError } = await adminClient.auth.admin.listUsers();
+  const { data: usersData, error: listError } =
+    await adminClient.auth.admin.listUsers();
   if (listError) {
     throw new Error(`Failed to list users: ${listError.message}`);
   }
 
-  console.log(`Found ${usersData.users.length} existing Supabase Auth user(s).`);
+  console.log(
+    `Found ${usersData.users.length} existing Supabase Auth user(s).`,
+  );
 
   let demoUser = usersData.users.find((u) => u.email === DEMO_EMAIL);
-  let password = generateSecurePassword();
+  const password = DEMO_PASSWORD;
 
   if (demoUser) {
     console.log(`Existing demo user found: ${demoUser.id} (${demoUser.email})`);
-    const { data: updateData, error: updateError } = await adminClient.auth.admin.updateUserById(
-      demoUser.id,
-      {
+    const { data: updateData, error: updateError } =
+      await adminClient.auth.admin.updateUserById(demoUser.id, {
         password,
         email_confirm: true,
         user_metadata: {
@@ -58,25 +70,27 @@ async function run() {
           role: 'OWNER',
           studioId: TARGET_STUDIO_ID,
         },
-      },
-    );
+      });
     if (updateError) {
-      throw new Error(`Failed to update demo user password: ${updateError.message}`);
+      throw new Error(
+        `Failed to update demo user password: ${updateError.message}`,
+      );
     }
     demoUser = updateData.user;
     console.log('Demo user credentials updated.');
   } else {
     console.log(`Creating new demo user: ${DEMO_EMAIL}...`);
-    const { data: createData, error: createError } = await adminClient.auth.admin.createUser({
-      email: DEMO_EMAIL,
-      password,
-      email_confirm: true,
-      user_metadata: {
-        fullName: 'ARS Pilates Demo Owner',
-        role: 'OWNER',
-        studioId: TARGET_STUDIO_ID,
-      },
-    });
+    const { data: createData, error: createError } =
+      await adminClient.auth.admin.createUser({
+        email: DEMO_EMAIL,
+        password,
+        email_confirm: true,
+        user_metadata: {
+          fullName: 'ARS Pilates Demo Owner',
+          role: 'OWNER',
+          studioId: TARGET_STUDIO_ID,
+        },
+      });
     if (createError) {
       throw new Error(`Failed to create demo user: ${createError.message}`);
     }
@@ -109,10 +123,14 @@ async function run() {
   } catch {
     // best effort on non-POSIX
   }
-  console.log(`[2/5] Saved demo credentials safely to ${credentialsPath} (mode 0600, gitignored).`);
+  console.log(
+    `[2/5] Saved demo credentials safely to ${credentialsPath} (mode 0600, gitignored).`,
+  );
 
   // Establish studio and StudioUser membership in database
-  console.log('[3/5] Establishing synthetic Studio and StudioUser OWNER membership in PostgreSQL...');
+  console.log(
+    '[3/5] Establishing synthetic Studio and StudioUser OWNER membership in PostgreSQL...',
+  );
   await prisma.studio.upsert({
     where: { id: TARGET_STUDIO_ID },
     update: {
@@ -145,7 +163,9 @@ async function run() {
       role: 'OWNER',
     },
   });
-  console.log(`Established OWNER membership: StudioUser ID ${membership.id}, Role: ${membership.role}`);
+  console.log(
+    `Established OWNER membership: StudioUser ID ${membership.id}, Role: ${membership.role}`,
+  );
 
   // Test and verify
   console.log('[4/5] Testing sign-in and JWT issuance with demo account...');
@@ -153,13 +173,16 @@ async function run() {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  const { data: authSessionData, error: signInError } = await publicClient.auth.signInWithPassword({
-    email: DEMO_EMAIL,
-    password,
-  });
+  const { data: authSessionData, error: signInError } =
+    await publicClient.auth.signInWithPassword({
+      email: DEMO_EMAIL,
+      password,
+    });
 
   if (signInError || !authSessionData.session) {
-    throw new Error(`Sign-in failed: ${signInError?.message ?? 'No session returned'}`);
+    throw new Error(
+      `Sign-in failed: ${signInError?.message ?? 'No session returned'}`,
+    );
   }
 
   const session = authSessionData.session;
@@ -176,7 +199,9 @@ async function run() {
     throw new Error('Session user ID does not match expected demo user ID.');
   }
 
-  console.log('[5/5] Testing server-side context resolution & access enforcement...');
+  console.log(
+    '[5/5] Testing server-side context resolution & access enforcement...',
+  );
 
   // Test 5b: Server-side context resolution confirms OWNER membership
   const resolvedRole = await withVerifiedStudioContext(
@@ -192,9 +217,13 @@ async function run() {
   );
 
   if (!resolvedRole || resolvedRole.role !== 'OWNER') {
-    throw new Error(`Expected role OWNER, got: ${JSON.stringify(resolvedRole)}`);
+    throw new Error(
+      `Expected role OWNER, got: ${JSON.stringify(resolvedRole)}`,
+    );
   }
-  console.log(` - Verification 5b PASSED: Resolved user ${demoUser.id} in studio ${TARGET_STUDIO_ID} with role OWNER.`);
+  console.log(
+    ` - Verification 5b PASSED: Resolved user ${demoUser.id} in studio ${TARGET_STUDIO_ID} with role OWNER.`,
+  );
 
   // Test 5c: Cross-studio access rejection
   const foreignStudioId = 'd9b73462-2222-4000-8000-000000000002';
@@ -205,7 +234,9 @@ async function run() {
     });
   } catch (err) {
     crossStudioBlocked = true;
-    console.log(` - Verification 5c PASSED: Cross-studio access to ${foreignStudioId} rejected with: ${err.message}`);
+    console.log(
+      ` - Verification 5c PASSED: Cross-studio access to ${foreignStudioId} rejected with: ${err.message}`,
+    );
   }
   if (!crossStudioBlocked) {
     throw new Error('Cross-studio access was not blocked!');
@@ -215,12 +246,18 @@ async function run() {
   const unauthorizedUserId = randomUUID();
   let nonMemberBlocked = false;
   try {
-    await withVerifiedStudioContext(unauthorizedUserId, TARGET_STUDIO_ID, async () => {
-      return true;
-    });
+    await withVerifiedStudioContext(
+      unauthorizedUserId,
+      TARGET_STUDIO_ID,
+      async () => {
+        return true;
+      },
+    );
   } catch (err) {
     nonMemberBlocked = true;
-    console.log(` - Verification 5d PASSED: User without membership rejected with: ${err.message}`);
+    console.log(
+      ` - Verification 5d PASSED: User without membership rejected with: ${err.message}`,
+    );
   }
   if (!nonMemberBlocked) {
     throw new Error('Unauthorized user access was not blocked!');

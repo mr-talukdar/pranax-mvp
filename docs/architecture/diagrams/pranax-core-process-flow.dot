@@ -1,0 +1,171 @@
+digraph PranaX_Core_Process_Flow {
+    graph [
+        label="PranaX MVP — End-to-End Operational Process Flow\n(Task-Level Implementation Plan v1.0)",
+        labelloc="t",
+        labeljust="c",
+        fontsize=18,
+        fontname="Helvetica-Bold",
+        fontcolor="#1A202C",
+        bgcolor="#FFFFFF",
+        rankdir="TB",
+        nodesep=0.5,
+        ranksep=0.6,
+        compound=true,
+        dpi=300
+    ];
+
+    node [
+        fontname="Helvetica",
+        fontsize=11,
+        shape="box",
+        style="filled,rounded",
+        margin="0.25,0.18",
+        penwidth=1.5
+    ];
+
+    edge [
+        fontname="Helvetica",
+        fontsize=9,
+        color="#4A5568",
+        penwidth=1.5,
+        arrowsize=0.8
+    ];
+
+    // Stage 1: Onboarding
+    subgraph cluster_onboarding {
+        label="1. Studio & Member Onboarding";
+        fontname="Helvetica-Bold";
+        fontsize=13;
+        fontcolor="#2B6CB0";
+        style="filled,rounded";
+        fillcolor="#F7FAFC";
+        color="#CBD5E0";
+        penwidth=1.8;
+
+        n_auth [label="Studio Owner / Manager Login\n(Supabase Auth)", fillcolor="#EBF8FF", color="#3182CE"];
+        n_ctx [label="Resolve Authenticated Studio Context\n(Server-Side Scope / Anti-Tamper)", fillcolor="#EBF8FF", color="#3182CE"];
+        n_reg [label="Register Member in Directory\n(Name, Contact, Studio Scope)", fillcolor="#EBF8FF", color="#3182CE"];
+        n_plan [label="Assign Membership Plan\n(Monthly / Quarterly / Annual)", fillcolor="#EBF8FF", color="#3182CE"];
+        db_members [label="Database\nActive Member Record", shape="cylinder", fillcolor="#EDF2F7", color="#4A5568"];
+
+        n_auth -> n_ctx -> n_reg -> n_plan -> db_members;
+    }
+
+    // Stage 2: Attendance Tracking
+    subgraph cluster_attendance {
+        label="2. Attendance Tracking & Ingestion";
+        fontname="Helvetica-Bold";
+        fontsize=13;
+        fontcolor="#2C5282";
+        style="filled,rounded";
+        fillcolor="#F7FAFC";
+        color="#CBD5E0";
+        penwidth=1.8;
+
+        d_channel [label="Ingestion\nChannel?", shape="diamond", style="filled", fillcolor="#FEFCBF", color="#D69E2E", fontname="Helvetica-Bold"];
+        n_desk [label="Manual Front Desk Check-in\n(Staff Member Search)", fillcolor="#EBF8FF", color="#3182CE"];
+        n_csv [label="Bulk CSV Upload\n(Resolve Member & Timestamps)", fillcolor="#EBF8FF", color="#3182CE"];
+        
+        d_dup [label="Duplicate on\nSame Local Date?", shape="diamond", style="filled", fillcolor="#FEFCBF", color="#D69E2E", fontname="Helvetica-Bold"];
+        n_reject [label="Reject Duplicate / Ignore\n(HTTP 409 / CSV Error)", fillcolor="#FED7D7", color="#E53E3E"];
+        n_record [label="Record Attendance Record\n(Verify Membership Status)", fillcolor="#EBF8FF", color="#3182CE"];
+        db_attendance [label="Database\nAttendance Records", shape="cylinder", fillcolor="#EDF2F7", color="#4A5568"];
+
+        d_channel -> n_desk [label="Front Desk"];
+        d_channel -> n_csv [label="CSV Import"];
+        n_desk -> d_dup;
+        n_csv -> d_dup;
+        d_dup -> n_reject [label="Yes"];
+        d_dup -> n_record [label="No (New)"];
+        n_record -> db_attendance;
+    }
+
+    // Stage 3: Engagement Indicators
+    subgraph cluster_indicators {
+        label="3. Engagement Indicators & Metrics Engine";
+        fontname="Helvetica-Bold";
+        fontsize=13;
+        fontcolor="#2B6CB0";
+        style="filled,rounded";
+        fillcolor="#F7FAFC";
+        color="#CBD5E0";
+        penwidth=1.8;
+
+        n_roll [label="Compute Rolling Date Windows\n(Studio Timezone Normalized)", fillcolor="#E2E8F0", color="#4A5568"];
+        n_recency [label="Recency Metric\nDays Since Last Visit", fillcolor="#EBF8FF", color="#3182CE"];
+        n_freq [label="Frequency Metric\nVisits in Last 7d & 30d", fillcolor="#EBF8FF", color="#3182CE"];
+        n_trend [label="Attendance Trend Metric\n(0-30d) vs (31-60d) Delta", fillcolor="#EBF8FF", color="#3182CE"];
+
+        n_roll -> n_recency;
+        n_roll -> n_freq;
+        n_roll -> n_trend;
+    }
+
+    // Stage 4: Retention Intelligence
+    subgraph cluster_retention {
+        label="4. Deterministic Retention Intelligence Engine";
+        fontname="Helvetica-Bold";
+        fontsize=13;
+        fontcolor="#553C9A";
+        style="filled,rounded";
+        fillcolor="#FAF5FF";
+        color="#D6BCFA";
+        penwidth=1.8;
+
+        d_elig [label="Eligibility Gate\n>=60d Coverage\n& Active Plan?", shape="diamond", style="filled", fillcolor="#FEFCBF", color="#D69E2E", fontname="Helvetica-Bold"];
+        n_limited [label="Limited Assessment\n(Unscored Observation / Missing Coverage Note)", fillcolor="#ED8936", color="#C05621", fontcolor="#FFFFFF", style="filled,rounded"];
+        
+        n_scoring [label="Evaluate 4 Dimensions:\n• Dim 1: Attendance Recency (25%)\n• Dim 2: Attendance Trend (35%)\n• Dim 3: Lifecycle Expiry (25%)\n• Dim 4: Historical Renewal (15%)", fillcolor="#EDE9FE", color="#7C3AED"];
+        n_weight [label="Dynamic Weight Redistribution\n(Proportional re-weight if Dim 4 unavailable)", fillcolor="#EDE9FE", color="#7C3AED"];
+        n_score [label="Compute Final Retention Score\n(0 – 100 Integer)", fillcolor="#EDE9FE", color="#7C3AED", fontname="Helvetica-Bold"];
+        
+        d_tier [label="Risk Classification\nTier?", shape="diamond", style="filled", fillcolor="#FEFCBF", color="#D69E2E", fontname="Helvetica-Bold"];
+        t_low [label="LOW RISK (0–29)\nHealthy Engagement", fillcolor="#C6F6D5", color="#38A169"];
+        t_med [label="MEDIUM RISK (30–59)\nEngagement Deteriorating", fillcolor="#FEEBC8", color="#DD6B20"];
+        t_high [label="HIGH RISK (60–100)\nImmediate Churn Threat", fillcolor="#FED7D7", color="#E53E3E", fontname="Helvetica-Bold"];
+
+        n_action [label="Rule-Based Next Best Action\n(+ Optional Grounded Gemini Narrative)", fillcolor="#E9D8FD", color="#6B46C1"];
+
+        d_elig -> n_limited [label="No / Paused"];
+        d_elig -> n_scoring [label="Eligible"];
+        n_scoring -> n_weight -> n_score -> d_tier;
+        d_tier -> t_low [label="0–29"];
+        d_tier -> t_med [label="30–59"];
+        d_tier -> t_high [label="60–100"];
+        t_med -> n_action;
+        t_high -> n_action;
+    }
+
+    // Stage 5: Owner Dashboard & Intervention
+    subgraph cluster_dashboard {
+        label="5. Owner Dashboard & Intervention Loop";
+        fontname="Helvetica-Bold";
+        fontsize=13;
+        fontcolor="#22543D";
+        style="filled,rounded";
+        fillcolor="#F0FFF4";
+        color="#9AE6B4";
+        penwidth=1.8;
+
+        n_dash [label="Owner Dashboard &\nAttention Queue (Sorted by Risk)", fillcolor="#C6F6D5", color="#38A169", fontname="Helvetica-Bold"];
+        n_triage [label="Triage & Review Evidence\n(Recency, Trend decline, Expiry date)", fillcolor="#C6F6D5", color="#38A169"];
+        n_outreach [label="Execute Retention Outreach\n(WhatsApp / Call / Plan Renewal Offer)", fillcolor="#C6F6D5", color="#38A169"];
+
+        n_dash -> n_triage -> n_outreach;
+    }
+
+    // Cross-cluster connections
+    db_members -> d_channel [color="#3182CE"];
+    db_attendance -> n_roll [color="#3182CE"];
+    
+    n_recency -> d_elig [color="#4A5568"];
+    n_freq -> d_elig [color="#4A5568"];
+    n_trend -> d_elig [color="#4A5568"];
+
+    t_low -> n_dash [color="#38A169"];
+    n_action -> n_dash [color="#6B46C1"];
+    n_limited -> n_dash [color="#C05621", style="dashed"];
+
+    // Retention loop back
+    n_outreach -> n_desk [label="Member Returns / Renews\n(Closes Retention Loop)", color="#2B6CB0", style="dashed", constraint=false];
+}

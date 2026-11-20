@@ -1,0 +1,194 @@
+digraph PranaX_Solution_Architecture {
+    graph [
+        label="PranaX MVP — System & Solution Architecture\nMulti-Tenant SaaS Platform for Boutique Fitness Studios",
+        labelloc="t",
+        labeljust="c",
+        fontsize=20,
+        fontname="Helvetica-Bold",
+        fontcolor="#0F172A",
+        bgcolor="#FFFFFF",
+        rankdir="TB",
+        nodesep=0.45,
+        ranksep=0.6,
+        compound=true,
+        dpi=300
+    ];
+
+    node [
+        fontname="Helvetica",
+        fontsize=10,
+        shape="box",
+        style="filled,rounded",
+        margin="0.2,0.14",
+        penwidth=1.4
+    ];
+
+    edge [
+        fontname="Helvetica",
+        fontsize=9,
+        color="#475569",
+        penwidth=1.4,
+        arrowsize=0.8
+    ];
+
+    // TIER 1: Presentation Tier
+    subgraph cluster_client {
+        label="1. Presentation Tier (Client Browser / Desktop First)";
+        fontname="Helvetica-Bold";
+        fontsize=12;
+        fontcolor="#1E3A8A";
+        style="filled,rounded";
+        fillcolor="#F0F9FF";
+        color="#BAE6FD";
+        penwidth=1.6;
+
+        c_owner [label="Studio Owner / Manager\n(Desktop Browser)", shape="ellipse", fillcolor="#E0F2FE", color="#0284C7"];
+        c_staff [label="Front Desk Staff\n(Quick Check-in UI)", shape="ellipse", fillcolor="#E0F2FE", color="#0284C7"];
+        c_ui [label="Next.js Client Components (React 19 / Tailwind CSS)\n• Studio Overview Dashboard (DASH-01)\n• Attendance Check-in Modal (ATT-01)\n• Retention Attention Queue (RET-01)\n• Member Profile & Evidence Drawer (MEM-04)", fillcolor="#FFFFFF", color="#0284C7"];
+
+        c_owner -> c_ui [label="Triage & Insights"];
+        c_staff -> c_ui [label="Front Desk Check-in"];
+    }
+
+    // TIER 2: Web Server Boundary
+    subgraph cluster_web {
+        label="2. Application Backend & Server Boundary (apps/web - Vercel / Next.js Server Runtime)";
+        fontname="Helvetica-Bold";
+        fontsize=12;
+        fontcolor="#065F46";
+        style="filled,rounded";
+        fillcolor="#F0FDF4";
+        color="#A7F3D0";
+        penwidth=1.6;
+
+        subgraph cluster_security {
+            label="Tenant Isolation & Auth Guard";
+            fontname="Helvetica-Bold";
+            fontsize=10;
+            fontcolor="#047857";
+            style="filled,rounded";
+            fillcolor="#FFFFFF";
+            color="#34D399";
+
+            s_auth [label="Supabase Auth Session Resolver\nExtract auth.uid() from HttpOnly Cookie", fillcolor="#ECFDF5", color="#059669"];
+            s_guard [label="Tenant Scope Resolution\nLookup StudioUser Membership\nSet app.studio_id Transaction Context", fillcolor="#ECFDF5", color="#059669", fontname="Helvetica-Bold"];
+            s_auth -> s_guard;
+        }
+
+        subgraph cluster_services {
+            label="Server-Side Domain Handlers (Route Handlers / Server Actions)";
+            fontname="Helvetica-Bold";
+            fontsize=10;
+            fontcolor="#047857";
+            style="filled,rounded";
+            fillcolor="#FFFFFF";
+            color="#34D399";
+
+            srv_member [label="Member Service\nRegistration, Directory & Plans", fillcolor="#F0FDF4", color="#10B981"];
+            srv_attend [label="Attendance Service\nManual Check-in & CSV Ingestion", fillcolor="#F0FDF4", color="#10B981"];
+            srv_dash [label="Dashboard Aggregation\nKPI Summaries & Attention Queue", fillcolor="#F0FDF4", color="#10B981"];
+            srv_client [label="Intelligence Client\nInternal Service Gateway", fillcolor="#F0FDF4", color="#10B981"];
+        }
+
+        s_guard -> srv_member;
+        s_guard -> srv_attend;
+        s_guard -> srv_dash;
+        srv_dash -> srv_client;
+    }
+
+    // TIER 3: Data Tier (PostgreSQL + RLS)
+    subgraph cluster_database {
+        label="3. Data Platform Tier (Supabase PostgreSQL + Prisma ORM)";
+        fontname="Helvetica-Bold";
+        fontsize=12;
+        fontcolor="#78350F";
+        style="filled,rounded";
+        fillcolor="#FFFBEB";
+        color="#FDE68A";
+        penwidth=1.6;
+
+        db_prisma [label="Prisma Client (packages/database)\n• Schema Authority & Migrations\n• Transaction-Scoped Studio Isolation", fillcolor="#FFFFFF", color="#D97706", fontname="Helvetica-Bold"];
+        
+        subgraph cluster_tables {
+            label="PostgreSQL Engine & Row Level Security (RLS)";
+            fontname="Helvetica-Bold";
+            fontsize=10;
+            fontcolor="#92400E";
+            style="filled,rounded";
+            fillcolor="#FFFFFF";
+            color="#FBBF24";
+
+            tbl_tenant [label="Tenancy Core:\n• Studio\n• StudioUser (auth.uid)", shape="cylinder", fillcolor="#FEF3C7", color="#B45309"];
+            tbl_member [label="Member Core:\n• Member\n• MembershipPeriod", shape="cylinder", fillcolor="#FEF3C7", color="#B45309"];
+            tbl_ops [label="Operations Core:\n• AttendanceRecord (deduped)\n• AttendanceImportLog", shape="cylinder", fillcolor="#FEF3C7", color="#B45309"];
+            tbl_ret [label="Retention Core:\n• RetentionAssessmentSnapshot\n• OutreachInteractionLog", shape="cylinder", fillcolor="#FEF3C7", color="#B45309"];
+        }
+
+        db_prisma -> tbl_tenant;
+        db_prisma -> tbl_member;
+        db_prisma -> tbl_ops;
+        db_prisma -> tbl_ret;
+    }
+
+    // TIER 4: Intelligence Tier (Python FastAPI)
+    subgraph cluster_intelligence {
+        label="4. Analytics & Retention Intelligence Service (services/intelligence - Python 3.12+ FastAPI)";
+        fontname="Helvetica-Bold";
+        fontsize=12;
+        fontcolor="#581C87";
+        style="filled,rounded";
+        fillcolor="#FAF5FF";
+        color="#E9D5FF";
+        penwidth=1.6;
+
+        py_api [label="FastAPI Microservice Endpoints\n(/retention/assess, /analytics/summary)\nExplicit Cross-Service Contract & Token Auth", fillcolor="#FFFFFF", color="#9333EA", fontname="Helvetica-Bold"];
+
+        subgraph cluster_py_modules {
+            label="Intelligence Engines";
+            fontname="Helvetica-Bold";
+            fontsize=10;
+            fontcolor="#6B21A8";
+            style="filled,rounded";
+            fillcolor="#FFFFFF";
+            color="#C084FC";
+
+            py_engine [label="Deterministic Retention Engine (ADR-002)\n• 4 Scoring Dimensions (Recency, Trend, Expiry, Renewal)\n• Dynamic Proportional Weight Redistribution\n• Low / Medium / High Risk Tiering", fillcolor="#F3E8FF", color="#7E22CE"];
+            py_action [label="Next Best Action Rule Engine\nGenerates Targeted Operational Interventions", fillcolor="#F3E8FF", color="#7E22CE"];
+            py_gemini [label="Gemini LLM Provider (Google ADK)\nGrounded Natural Language Narrative Generator\n(Evidence-Bound Prompt Template)", fillcolor="#F3E8FF", color="#7E22CE", fontname="Helvetica-Bold"];
+            py_stats [label="Statistical Processing Engine\nNumPy / pandas Rolling Window Analyzers", fillcolor="#F3E8FF", color="#7E22CE"];
+        }
+
+        py_api -> py_engine;
+        py_engine -> py_action;
+        py_action -> py_gemini;
+        py_api -> py_stats;
+    }
+
+    // TIER 5: Shared Contracts & Tooling
+    subgraph cluster_shared {
+        label="Cross-Cutting Contracts & Synthetic Testing";
+        fontname="Helvetica-Bold";
+        fontsize=11;
+        fontcolor="#334155";
+        style="filled,rounded";
+        fillcolor="#F8FAFC";
+        color="#CBD5E1";
+        penwidth=1.4;
+
+        pkg_contracts [label="packages/contracts\nShared TypeScript API Contracts\n& Zod Schemas", fillcolor="#FFFFFF", color="#64748B"];
+        tool_synth [label="tools/synthetic-data\nDeterministic Scenario Factory\n& Prisma Seed Loader", fillcolor="#FFFFFF", color="#64748B"];
+    }
+
+    // Connectors across tiers
+    c_ui -> s_auth [label="HTTPS / JSON\n(Secure Session)", color="#0284C7", penwidth=1.8];
+    srv_member -> db_prisma [label="Tenant-Scoped Queries", color="#059669"];
+    srv_attend -> db_prisma [label="Deduplicated Check-ins", color="#059669"];
+    srv_dash -> db_prisma [label="Aggregates & Attention Queue", color="#059669"];
+    
+    srv_client -> py_api [label="Internal Service HTTP\nTenant Data Payload", color="#9333EA", penwidth=1.8];
+    py_gemini -> srv_client [label="Structured Risk Scores\n+ Grounded Narrative", color="#9333EA", style="dashed"];
+
+    pkg_contracts -> c_ui [style="dotted", color="#94A3B8"];
+    pkg_contracts -> srv_member [style="dotted", color="#94A3B8"];
+    tool_synth -> db_prisma [label="Controlled Seed Load", style="dashed", color="#64748B"];
+}

@@ -5,7 +5,6 @@ import type {
   AttendanceItem,
   MembershipStatusType,
 } from './types';
-import { TARGET_STUDIO } from './constants';
 
 type ApiMemberRow = {
   id: string;
@@ -42,101 +41,29 @@ type ApiAttendanceRow = {
   source?: 'MANUAL' | 'CSV';
 };
 
-let cachedToken: string | null = null;
-let sessionPromise: Promise<string | null> | null = null;
-
-function isAccessTokenExpired(token: string): boolean {
-  try {
-    const payload = token.split('.')[1];
-    if (!payload) return true;
-    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
-    const claims = JSON.parse(globalThis.window.atob(base64)) as { exp?: unknown };
-    return typeof claims.exp !== 'number' || claims.exp * 1000 <= Date.now() + 30_000;
-  } catch {
-    return true;
-  }
+export async function getAuthHeaders(
+  extraHeaders: Record<string, string> = {},
+): Promise<Record<string, string>> {
+  return { ...extraHeaders };
 }
 
-export async function ensureAuth(): Promise<string | null> {
-  if (typeof globalThis.window === 'undefined') {
-    return null;
-  }
-  if (!cachedToken) {
-    try {
-      cachedToken = globalThis.window.localStorage.getItem('pranax_demo_token');
-    } catch {
-      // Storage may be unavailable in restricted browser contexts.
-    }
-  }
-  if (cachedToken && isAccessTokenExpired(cachedToken)) {
-    cachedToken = null;
-    try {
-      globalThis.window.localStorage.removeItem('pranax_demo_token');
-    } catch {
-      // Continue without a cached token when storage is unavailable.
-    }
-  }
-  if (cachedToken) {
-    return cachedToken;
-  }
-  if (!sessionPromise) {
-    sessionPromise = (async () => {
-      try {
-        const res = await globalThis.fetch('/api/auth/demo-session', {
-          method: 'POST',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-        });
-        if (res.ok) {
-          const json = await res.json();
-          cachedToken = json.data?.accessToken ?? null;
-          if (cachedToken) {
-            try {
-              globalThis.window.localStorage.setItem('pranax_demo_token', cachedToken);
-            } catch {
-              // Keep the in-memory token when persistent storage is unavailable.
-            }
-          }
-          return cachedToken;
-        }
-      } catch (err) {
-        console.error('Failed to initialize demo auth session', err);
-      } finally {
-        sessionPromise = null;
-      }
-      return null;
-    })();
-  }
-  return sessionPromise;
-}
-
-export async function getAuthHeaders(extraHeaders: Record<string, string> = {}): Promise<Record<string, string>> {
-  const token = await ensureAuth();
-  const headers: Record<string, string> = {
-    'x-studio-id': TARGET_STUDIO.id,
-    ...extraHeaders,
-  };
-  if (token) {
-    headers.authorization = `Bearer ${token}`;
-  }
-  return headers;
-}
-
-function apiFetch(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+function apiFetch(
+  input: RequestInfo | URL,
+  init: RequestInit = {},
+): Promise<Response> {
   return globalThis.fetch(input, { ...init, credentials: 'include' });
 }
 
 export async function fetchDashboardData(options?: {
   asOfDate?: string;
-  studioId?: string;
+  trendInterval?: 'daily' | 'monthly';
 }): Promise<DashboardKPIs> {
-  const studioId = options?.studioId ?? TARGET_STUDIO.id;
-  const queryStr = options?.asOfDate
-    ? `?asOfDate=${encodeURIComponent(options.asOfDate)}`
-    : '';
-
+  const params = new URLSearchParams();
+  if (options?.asOfDate) params.set('asOfDate', options.asOfDate);
+  if (options?.trendInterval)
+    params.set('trendInterval', options.trendInterval);
+  const queryStr = params.size ? `?${params.toString()}` : '';
   const headers = await getAuthHeaders();
-  headers['x-studio-id'] = studioId;
 
   const res = await apiFetch(`/api/dashboard${queryStr}`, {
     headers,
@@ -146,7 +73,8 @@ export async function fetchDashboardData(options?: {
   if (!res.ok) {
     const errorJson = await res.json().catch(() => ({}));
     throw new Error(
-      errorJson.error || `Failed to fetch dashboard metrics (Status: ${res.status})`,
+      errorJson.error ||
+        `Failed to fetch dashboard metrics (Status: ${res.status})`,
     );
   }
 
@@ -167,7 +95,8 @@ export async function fetchMembers(options?: {
 }): Promise<{ members: MemberSummary[]; total: number; hasMore: boolean }> {
   const params = new URLSearchParams();
   if (options?.search) params.set('search', options.search);
-  if (options?.status && options.status !== 'all') params.set('status', options.status);
+  if (options?.status && options.status !== 'all')
+    params.set('status', options.status);
   if (options?.limit) params.set('limit', String(options.limit));
   if (options?.offset) params.set('offset', String(options.offset));
   if (options?.sort) params.set('sort', options.sort);
@@ -197,29 +126,33 @@ export async function fetchMembers(options?: {
     'bg-teal-600',
   ];
 
-  const members: MemberSummary[] = (json.data ?? []).map((m: ApiMemberRow, index: number) => {
-    const rawStatus = m.currentMembership?.status ?? 'EXPIRED';
-    const status: MembershipStatusType =
-      rawStatus === 'ACTIVE' || rawStatus === 'PAUSED' || rawStatus === 'CANCELLED'
-        ? rawStatus
-        : 'EXPIRED';
+  const members: MemberSummary[] = (json.data ?? []).map(
+    (m: ApiMemberRow, index: number) => {
+      const rawStatus = m.currentMembership?.status ?? 'EXPIRED';
+      const status: MembershipStatusType =
+        rawStatus === 'ACTIVE' ||
+        rawStatus === 'PAUSED' ||
+        rawStatus === 'CANCELLED'
+          ? rawStatus
+          : 'EXPIRED';
 
-    return {
-      id: m.id,
-      firstName: m.firstName,
-      lastName: m.lastName,
-      email: m.email,
-      phone: m.phone,
-      joinedAt: m.joinedAt,
-      status,
-      planName: m.currentMembership?.planName ?? 'No Active Pass',
-      lastVisit: null,
-      cadence: status === 'ACTIVE' ? 'Active Member' : 'Inactive / Paused',
-      retentionCategory: m.retentionCategory ?? null,
-      retentionScore: m.retentionScore ?? null,
-      avatarBg: avatarBgs[index % avatarBgs.length],
-    };
-  });
+      return {
+        id: m.id,
+        firstName: m.firstName,
+        lastName: m.lastName,
+        email: m.email,
+        phone: m.phone,
+        joinedAt: m.joinedAt,
+        status,
+        planName: m.currentMembership?.planName ?? 'No Active Pass',
+        lastVisit: null,
+        cadence: status === 'ACTIVE' ? 'Active Member' : 'Inactive / Paused',
+        retentionCategory: m.retentionCategory ?? null,
+        retentionScore: m.retentionScore ?? null,
+        avatarBg: avatarBgs[index % avatarBgs.length],
+      };
+    },
+  );
 
   return {
     members,
@@ -231,34 +164,60 @@ export async function fetchMembers(options?: {
 export async function fetchMemberById(id: string): Promise<MemberDetail> {
   const headers = await getAuthHeaders();
 
-  const [memberRes, membershipsRes, attendanceRes, retentionRes] = await Promise.all([
-    apiFetch(`/api/members/${id}`, { headers, cache: 'no-store' }),
-    apiFetch(`/api/members/${id}/memberships`, { headers, cache: 'no-store' }).catch(() => null),
-    apiFetch(`/api/members/${id}/attendance`, { headers, cache: 'no-store' }).catch(() => null),
-    apiFetch(`/api/members/${id}/retention`, { headers, cache: 'no-store' }).catch(() => null),
-  ]);
+  const [memberRes, membershipsRes, attendanceRes, retentionRes] =
+    await Promise.all([
+      apiFetch(`/api/members/${id}`, { headers, cache: 'no-store' }),
+      apiFetch(`/api/members/${id}/memberships`, {
+        headers,
+        cache: 'no-store',
+      }).catch(() => null),
+      apiFetch(`/api/members/${id}/attendance`, {
+        headers,
+        cache: 'no-store',
+      }).catch(() => null),
+      apiFetch(`/api/members/${id}/retention`, {
+        headers,
+        cache: 'no-store',
+      }).catch(() => null),
+    ]);
 
   if (!memberRes.ok) {
     const err = await memberRes.json().catch(() => ({}));
-    throw new Error(err.error || `Failed to load member profile (Status: ${memberRes.status})`);
+    throw new Error(
+      err.error ||
+        `Failed to load member profile (Status: ${memberRes.status})`,
+    );
   }
 
   const memberJson = await memberRes.json();
   const m = memberJson.data;
 
-  const membershipsJson = membershipsRes && membershipsRes.ok ? await membershipsRes.json() : { data: [] };
-  const history = Array.isArray(membershipsJson.data) ? membershipsJson.data : [];
+  const membershipsJson =
+    membershipsRes && membershipsRes.ok
+      ? await membershipsRes.json()
+      : { data: [] };
+  const history = Array.isArray(membershipsJson.data)
+    ? membershipsJson.data
+    : [];
 
-  const retentionJson = retentionRes && retentionRes.ok ? await retentionRes.json() : null;
+  const retentionJson =
+    retentionRes && retentionRes.ok ? await retentionRes.json() : null;
   const retentionData = retentionJson?.data;
 
-  const attendanceJson = attendanceRes && attendanceRes.ok ? await attendanceRes.json() : { data: [] };
-  const attendanceList = Array.isArray(attendanceJson.data) ? attendanceJson.data : [];
+  const attendanceJson =
+    attendanceRes && attendanceRes.ok
+      ? await attendanceRes.json()
+      : { data: [] };
+  const attendanceList = Array.isArray(attendanceJson.data)
+    ? attendanceJson.data
+    : [];
 
   const primaryPeriod = m.currentMembership ?? history[0];
   const rawStatus = primaryPeriod?.status ?? 'EXPIRED';
   const status: MembershipStatusType =
-    rawStatus === 'ACTIVE' || rawStatus === 'PAUSED' || rawStatus === 'CANCELLED'
+    rawStatus === 'ACTIVE' ||
+    rawStatus === 'PAUSED' ||
+    rawStatus === 'CANCELLED'
       ? rawStatus
       : 'EXPIRED';
 
@@ -298,10 +257,12 @@ export async function fetchMemberById(id: string): Promise<MemberDetail> {
     membership: {
       planId: primaryPeriod?.planId ?? primaryPeriod?.id ?? 'default-plan',
       planName: primaryPeriod?.planName ?? 'No Active Plan',
-      startsAt: primaryPeriod?.startsAt ? primaryPeriod.startsAt.slice(0, 10) : '2026-01-01',
+      startsAt: primaryPeriod?.startsAt
+        ? primaryPeriod.startsAt.slice(0, 10)
+        : '2026-01-01',
       endsAt: primaryPeriod?.effectiveEndsAt
         ? primaryPeriod.effectiveEndsAt.slice(0, 10)
-        : primaryPeriod?.originalEndsAt?.slice(0, 10) ?? '2026-12-31',
+        : (primaryPeriod?.originalEndsAt?.slice(0, 10) ?? '2026-12-31'),
       priceCents: primaryPeriod?.priceCents ?? 1000000,
       status,
       renewalDueDays,
@@ -326,7 +287,9 @@ export async function createMemberApi(data: {
 
   if (!res.ok) {
     const errorJson = await res.json().catch(() => ({}));
-    throw new Error(errorJson.error || `Failed to create member (Status: ${res.status})`);
+    throw new Error(
+      errorJson.error || `Failed to create member (Status: ${res.status})`,
+    );
   }
 
   const json = await res.json();
@@ -459,17 +422,19 @@ export async function fetchAttendanceRecords(options?: {
   }
 
   const json = await res.json();
-  const records: AttendanceItem[] = (json.data ?? []).map((r: ApiAttendanceRow) => ({
-    id: r.id,
-    memberId: r.memberId,
-    memberName: r.memberName,
-    memberEmail: r.memberEmail ?? undefined,
-    checkedInAt: r.occurredAt,
-    classType: 'Pilates Studio Session',
-    instructor: 'Studio Instructor',
-    source: r.source ?? 'MANUAL',
-    terminal: 'Front Kiosk Console',
-  }));
+  const records: AttendanceItem[] = (json.data ?? []).map(
+    (r: ApiAttendanceRow) => ({
+      id: r.id,
+      memberId: r.memberId,
+      memberName: r.memberName,
+      memberEmail: r.memberEmail ?? undefined,
+      checkedInAt: r.occurredAt,
+      classType: 'Pilates Studio Session',
+      instructor: 'Studio Instructor',
+      source: r.source ?? 'MANUAL',
+      terminal: 'Front Kiosk Console',
+    }),
+  );
 
   return {
     records,
@@ -496,7 +461,9 @@ export async function recordCheckInApi(data: {
 
   if (!res.ok) {
     const errorJson = await res.json().catch(() => ({}));
-    throw new Error(errorJson.error || `Failed to record check-in (${res.status})`);
+    throw new Error(
+      errorJson.error || `Failed to record check-in (${res.status})`,
+    );
   }
 
   const json = await res.json();
@@ -504,7 +471,9 @@ export async function recordCheckInApi(data: {
 }
 
 export async function importAttendanceCsvApi(
-  payload: { csvContent: string; sourceName?: string; idempotencyKey?: string } | FormData,
+  payload:
+    | { csvContent: string; sourceName?: string; idempotencyKey?: string }
+    | FormData,
 ): Promise<{
   batchId: string;
   totalRows: number;
@@ -513,8 +482,11 @@ export async function importAttendanceCsvApi(
   duplicateCount: number;
   errors: Array<{ rowNumber: number; reason: string }>;
 }> {
-  const isFormData = typeof FormData !== 'undefined' && payload instanceof FormData;
-  const headers = await getAuthHeaders(isFormData ? {} : { 'Content-Type': 'application/json' });
+  const isFormData =
+    typeof FormData !== 'undefined' && payload instanceof FormData;
+  const headers = await getAuthHeaders(
+    isFormData ? {} : { 'Content-Type': 'application/json' },
+  );
 
   const res = await apiFetch('/api/attendance/import', {
     method: 'POST',

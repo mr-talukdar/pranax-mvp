@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PranaX MVP — Solution Architecture Blueprint</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  body { background-color: #0F172A; color: #F8FAFC; width: 1920px; height: 1080px; overflow: hidden; padding: 32px 40px; display: flex; flex-direction: column; }
+  
+  header { margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid #334155; padding-bottom: 16px; }
+  .title-group h1 { font-size: 26px; font-weight: 800; color: #FFFFFF; letter-spacing: -0.5px; display: flex; align-items: center; gap: 12px; }
+  .badge-mvp { font-size: 11px; background: #0D9488; color: white; padding: 3px 8px; border-radius: 4px; font-weight: 700; text-transform: uppercase; }
+  .title-group p { font-size: 13px; color: #94A3B8; margin-top: 4px; }
+  
+  .tech-pills { display: flex; gap: 10px; align-items: center; }
+  .tech-pill { background: #1E293B; border: 1px solid #334155; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 600; color: #CBD5E1; }
+
+  /* 4-Tier Landscape Layout */
+  .arch-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1.25fr 1.15fr 1.1fr;
+    gap: 20px;
+  }
+
+  .tier-col {
+    background: #182234;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 18px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    position: relative;
+    box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.3);
+  }
+  .tier-col.highlight-web { border-color: #0D9488; }
+  .tier-col.highlight-db { border-color: #D97706; }
+  .tier-col.highlight-py { border-color: #9333EA; }
+
+  .tier-header {
+    border-bottom: 1px solid #334155;
+    padding-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .tier-title { font-size: 14px; font-weight: 700; color: #F1F5F9; display: flex; align-items: center; gap: 8px; }
+  .tier-tag { font-size: 9px; font-weight: 700; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; }
+  .tag-blue { background: rgba(56, 189, 248, 0.15); color: #38BDF8; border: 1px solid #0284C7; }
+  .tag-teal { background: rgba(13, 148, 136, 0.15); color: #2DD4BF; border: 1px solid #0D9488; }
+  .tag-amber { background: rgba(245, 158, 11, 0.15); color: #FBBF24; border: 1px solid #D97706; }
+  .tag-purple { background: rgba(168, 85, 247, 0.15); color: #C084FC; border: 1px solid #9333EA; }
+
+  .box-component {
+    background: #0F172A;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    position: relative;
+  }
+  .comp-title { font-size: 12px; font-weight: 700; color: #FFFFFF; display: flex; align-items: center; justify-content: space-between; }
+  .comp-desc { font-size: 10px; color: #94A3B8; line-height: 1.4; }
+  .comp-badge { font-size: 9px; font-weight: 600; padding: 1px 5px; border-radius: 3px; }
+
+  /* Sub-lists & features */
+  .feature-list { list-style: none; font-size: 10px; color: #CBD5E1; display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+  .feature-list li { display: flex; align-items: center; gap: 6px; }
+  .feature-list li::before { content: "•"; color: #0D9488; font-weight: 800; }
+
+  /* Boundary Guard Box */
+  .security-box {
+    background: rgba(13, 148, 136, 0.1);
+    border: 1px solid #0D9488;
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+  .security-box b { font-size: 11px; color: #2DD4BF; display: block; margin-bottom: 4px; }
+  .security-box p { font-size: 10px; color: #99F6E4; line-height: 1.35; }
+
+  /* Connection Flow Badges */
+  .flow-pipe {
+    background: #1E293B;
+    border: 1px dashed #475569;
+    border-radius: 6px;
+    padding: 6px 8px;
+    font-size: 9px;
+    color: #94A3B8;
+    text-align: center;
+  }
+
+  footer {
+    margin-top: 18px;
+    border-top: 1px solid #334155;
+    padding-top: 12px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #64748B;
+  }
+</style>
+</head>
+<body>
+
+  <header>
+    <div class="title-group">
+      <h1>
+        PranaX MVP — System & Solution Architecture
+        <span class="badge-mvp">Engineering Foundation</span>
+      </h1>
+      <p>Multi-Tenant SaaS Boundary Map: Next.js Server Boundary &bull; Supabase PostgreSQL with RLS &bull; Python Intelligence Service</p>
+    </div>
+    <div class="tech-pills">
+      <div class="tech-pill">Next.js App Router (React 19)</div>
+      <div class="tech-pill">Supabase Auth & PostgreSQL</div>
+      <div class="tech-pill">Prisma ORM</div>
+      <div class="tech-pill">Python 3.12 + FastAPI</div>
+      <div class="tech-pill">Google Gemini ADK</div>
+    </div>
+  </header>
+
+  <div class="arch-grid">
+
+    <!-- Column 1: Presentation Tier -->
+    <div class="tier-col">
+      <div class="tier-header">
+        <div class="tier-title">1. Presentation Tier</div>
+        <span class="tier-tag tag-blue">Browser Client</span>
+      </div>
+
+      <div class="box-component" style="border-left: 3px solid #38BDF8;">
+        <div class="comp-title">
+          <span>Studio Front Desk / Owner</span>
+          <span class="comp-badge" style="background:#0284C7; color:white;">Desktop UI</span>
+        </div>
+        <div class="comp-desc">Responsive desktop-first browser client running React 19 Client Components & Tailwind CSS.</div>
+      </div>
+
+      <div class="box-component">
+        <div class="comp-title">Core UI Screens & Modals</div>
+        <ul class="feature-list">
+          <li><b>DASH-01:</b> Studio Overview Dashboard</li>
+          <li><b>MEM-01/02:</b> Member Directory & Profiles</li>
+          <li><b>ATT-01:</b> 1-Click Front Desk Check-in</li>
+          <li><b>ATT-03:</b> CSV Attendance Batch Wizard</li>
+          <li><b>RET-01:</b> Retention Attention Queue</li>
+          <li><b>RET-04:</b> Slide-out Retention Evidence Drawer</li>
+        </ul>
+      </div>
+
+      <div class="box-component">
+        <div class="comp-title">Shared Contracts (packages/contracts)</div>
+        <div class="comp-desc">TypeScript types and Zod schemas shared across frontend and backend boundaries. Eliminates runtime contract drift.</div>
+      </div>
+
+      <div class="flow-pipe" style="margin-top:auto;">
+        &darr; HTTPS / JSON (HttpOnly Cookies &bull; Auth UID)
+      </div>
+    </div>
+
+    <!-- Column 2: Web Server Boundary -->
+    <div class="tier-col highlight-web">
+      <div class="tier-header">
+        <div class="tier-title">2. Web Server Boundary</div>
+        <span class="tier-tag tag-teal">apps/web &bull; Next.js</span>
+      </div>
+
+      <div class="security-box">
+        <b>Mandatory Multi-Tenant Guard (ADR-001)</b>
+        <p>Every request extracts <code>auth.uid()</code> from Supabase session. Server-side lookup confirms <code>StudioUser</code> membership. Sets transaction-scoped <code>app.studio_id</code>. Never trusts browser tenant ID.</p>
+      </div>
+
+      <div class="box-component" style="border-left: 3px solid #0D9488;">
+        <div class="comp-title">Server Actions & Route Handlers</div>
+        <div class="comp-desc">Server-only modules owning studio business workflows & authorization:</div>
+        <ul class="feature-list">
+          <li><b>Member Operations:</b> Lifecycle (Active, Paused, Expired, Cancelled)</li>
+          <li><b>Attendance Engine:</b> Same-day check-in idempotency (1 visit per member/day)</li>
+          <li><b>CSV Ingestor:</b> Member resolution & batch validation</li>
+          <li><b>Dashboard Aggregator:</b> Rolling 7d & 30d KPI calculators</li>
+        </ul>
+      </div>
+
+      <div class="box-component">
+        <div class="comp-title">Intelligence Service Gateway</div>
+        <div class="comp-desc">Explicit internal HTTP client passing authorized studio member arrays to the Python intelligence service.</div>
+      </div>
+
+      <div class="flow-pipe" style="margin-top:auto;">
+        &darr; Prisma Client &bull; Transaction-Scoped app.studio_id
+      </div>
+    </div>
+
+    <!-- Column 3: Data Platform Tier -->
+    <div class="tier-col highlight-db">
+      <div class="tier-header">
+        <div class="tier-title">3. Data Platform Tier</div>
+        <span class="tier-tag tag-amber">Supabase PostgreSQL</span>
+      </div>
+
+      <div class="box-component" style="border-left: 3px solid #F59E0B;">
+        <div class="comp-title">
+          <span>Prisma ORM (packages/database)</span>
+          <span class="comp-badge" style="background:#D97706; color:white;">Schema Authority</span>
+        </div>
+        <div class="comp-desc">Prisma Migrate is the sole schema authority. Emits declarative migrations with custom SQL for RLS policies.</div>
+      </div>
+
+      <div class="box-component">
+        <div class="comp-title">PostgreSQL Row Level Security (RLS)</div>
+        <div class="comp-desc">Defense-in-depth isolation across all tenant tables:</div>
+        <ul class="feature-list">
+          <li><code>Studio</code> & <code>StudioUser</code>: Tenancy membership</li>
+          <li><code>Member</code>: Profile & contact scoping</li>
+          <li><code>MembershipPeriod</code>: Lifecycle timeline records</li>
+          <li><code>AttendanceRecord</code>: Unique on (member_id, local_date)</li>
+          <li><code>RetentionAssessmentSnapshot</code>: Immutable score audit</li>
+          <li><code>OutreachInteractionLog</code>: Owner intervention history</li>
+        </ul>
+      </div>
+
+      <div class="box-component">
+        <div class="comp-title">Synthetic Data Seeder</div>
+        <div class="comp-desc">Controlled seed loader in <code>tools/synthetic-data</code> populating deterministic test scenarios without bypassing RLS.</div>
+      </div>
+
+      <div class="flow-pipe" style="margin-top:auto;">
+        &larr; Isolated Operational Data Stores &rarr;
+      </div>
+    </div>
+
+    <!-- Column 4: Intelligence Tier -->
+    <div class="tier-col highlight-py">
+      <div class="tier-header">
+        <div class="tier-title">4. Intelligence Tier</div>
+        <span class="tier-tag tag-purple">services/intelligence</span>
+      </div>
+
+      <div class="box-component" style="border-left: 3px solid #9333EA;">
+        <div class="comp-title">
+          <span>Python 3.12+ & FastAPI</span>
+          <span class="comp-badge" style="background:#7E22CE; color:white;">Microservice</span>
+        </div>
+        <div class="comp-desc">Isolated analytics and machine learning service. Strictly decoupled from direct browser access.</div>
+      </div>
+
+      <div class="box-component">
+        <div class="comp-title">Deterministic Retention Engine</div>
+        <div class="comp-desc"><b>ADR-002:</b> Transparent, explainable risk scoring:</div>
+        <ul class="feature-list">
+          <li><b>Recency (25%):</b> Inactivity days (0, 30, 65, 100)</li>
+          <li><b>Trend (35%):</b> 30d vs 30d drop percentage</li>
+          <li><b>Expiry (25%):</b> Days to effective expiration</li>
+          <li><b>Renewal (15%):</b> Historical non-renewal rate</li>
+          <li><b>Dynamic Weight Redistribution:</b> Re-weights available dimensions proportionally if history &lt; 2 cycles.</li>
+        </ul>
+      </div>
+
+      <div class="box-component">
+        <div class="comp-title">
+          <span>Gemini AI Narrative Copilot</span>
+          <span class="comp-badge" style="background:#9333EA; color:white;">Google ADK</span>
+        </div>
+        <div class="comp-desc">Generates human-readable, grounded retention recommendations strictly constrained to structured dimension facts. Zero hallucination.</div>
+      </div>
+
+      <div class="flow-pipe" style="margin-top:auto;">
+        &rarr; Structured JSON Risk Payload to Web Server
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    <span>PranaX Architecture Blueprint &bull; GeneriX Engineering Team</span>
+    <span>Compliance: ADR-001 (Backend/DB), ADR-002 (Retention Boundary), ADR-003 (Snapshots)</span>
+  </footer>
+
+</body>
+</html>

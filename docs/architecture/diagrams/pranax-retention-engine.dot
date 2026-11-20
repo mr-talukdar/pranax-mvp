@@ -1,0 +1,144 @@
+digraph PranaX_Retention_Engine {
+    graph [
+        label="PranaX MVP — Deterministic Retention Intelligence Engine\n(Scoring Dimensions, Weight Redistribution & Decision Logic)",
+        labelloc="t",
+        labeljust="c",
+        fontsize=18,
+        fontname="Helvetica-Bold",
+        fontcolor="#1A202C",
+        bgcolor="#FFFFFF",
+        rankdir="TB",
+        nodesep=0.45,
+        ranksep=0.55,
+        dpi=300
+    ];
+
+    node [
+        fontname="Helvetica",
+        fontsize=11,
+        shape="box",
+        style="filled,rounded",
+        margin="0.22,0.15",
+        penwidth=1.5
+    ];
+
+    edge [
+        fontname="Helvetica",
+        fontsize=9,
+        color="#4A5568",
+        penwidth=1.5,
+        arrowsize=0.8
+    ];
+
+    start_node [label="Member Scheduled for Daily Assessment\n(Active Member Record)", shape="ellipse", fillcolor="#E2E8F0", color="#4A5568", fontname="Helvetica-Bold"];
+
+    // Eligibility Subgraph
+    subgraph cluster_eligibility {
+        label="Phase 1: Eligibility & Pre-Filter";
+        fontname="Helvetica-Bold";
+        fontsize=13;
+        fontcolor="#2C5282";
+        style="filled,rounded";
+        fillcolor="#F7FAFC";
+        color="#CBD5E0";
+
+        g_status [label="Membership Status\nActive?", shape="diamond", style="filled", fillcolor="#FEFCBF", color="#D69E2E", fontname="Helvetica-Bold"];
+        out_paused [label="Exclude from Active Scoring\n(Risk Assessment Suspended)", fillcolor="#EDF2F7", color="#A0AEC0"];
+        out_churned [label="Exclude Expired/Cancelled Members\n(Already Churned)", fillcolor="#EDF2F7", color="#A0AEC0"];
+
+        g_cov [label="Attendance History Coverage\n>= 60 Days Reliable?", shape="diamond", style="filled", fillcolor="#FEFCBF", color="#D69E2E", fontname="Helvetica-Bold"];
+        out_limited [label="Generate Limited Assessment\n• Show factual visit count\n• Mark overall risk as UNKNOWN\n• Reason: Insufficient Coverage Window", fillcolor="#FEEBC8", color="#DD6B20", fontname="Helvetica-Bold"];
+
+        g_status -> out_churned [label="Expired / Cancelled"];
+        g_status -> out_paused [label="Paused"];
+        g_status -> g_cov [label="Active"];
+        g_cov -> out_limited [label="No (<60d)"];
+    }
+
+    start_node -> g_status;
+
+    // Dimensions Subgraph
+    subgraph cluster_dimensions {
+        label="Phase 2: 4-Dimensional Scoring Evaluation";
+        fontname="Helvetica-Bold";
+        fontsize=13;
+        fontcolor="#553C9A";
+        style="filled,rounded";
+        fillcolor="#FAF5FF";
+        color="#D6BCFA";
+
+        d1 [label="Dimension 1: Attendance Recency (25%)\n• 0–14 days: 0 (No risk)\n• 15–29 days: 30 (Mild delay)\n• 30–44 days: 65 (Elevated delay)\n• 45+ days: 100 (Severe inactivity)\n*Personal baseline can accelerate risk floor", fillcolor="#EDE9FE", color="#7C3AED"];
+        
+        d2 [label="Dimension 2: Attendance Trend (35%)\nCompare Last 30d vs Prior 30d Visits:\n• Decline <=0%: 0\n• Decline 1–25%: 20\n• Decline 26–50%: 45\n• Decline 51–75%: 70\n• Decline 76–100%: 100", fillcolor="#EDE9FE", color="#7C3AED"];
+
+        d3 [label="Dimension 3: Lifecycle Expiry (25%)\nDays until Membership End:\n• > 30 days: 0\n• 15–30 days: 25\n• 8–14 days: 50\n• 0–7 days: 100\n*Confirmed renewal immediately clears this dimension", fillcolor="#EDE9FE", color="#7C3AED"];
+
+        d4 [label="Dimension 4: Historical Renewal (15%)\nRequires >= 2 completed renewal cycles\nin rolling 12 months:\n• Evaluates past non-renewal patterns", fillcolor="#EDE9FE", color="#7C3AED"];
+    }
+
+    g_cov -> d1 [label="Eligible (>=60d)"];
+    g_cov -> d2 [label="Eligible (>=60d)"];
+    g_cov -> d3 [label="Eligible (>=60d)"];
+    g_cov -> d4 [label="Eligible (>=60d)"];
+
+    // Weight Redistribution & Calculation
+    subgraph cluster_weighting {
+        label="Phase 3: Dynamic Weight Redistribution & Scoring";
+        fontname="Helvetica-Bold";
+        fontsize=13;
+        fontcolor="#22543D";
+        style="filled,rounded";
+        fillcolor="#F0FFF4";
+        color="#9AE6B4";
+
+        g_d4 [label="Dimension 4\nAvailable?", shape="diamond", style="filled", fillcolor="#FEFCBF", color="#D69E2E", fontname="Helvetica-Bold"];
+        w_standard [label="Standard Weights Applied:\n• Dim 1 (Recency): 25%\n• Dim 2 (Trend): 35%\n• Dim 3 (Expiry): 25%\n• Dim 4 (Renewal): 15%", fillcolor="#C6F6D5", color="#38A169"];
+        w_redist [label="Proportional Redistribution (Dim 4 Excluded):\n• Dim 1 (Recency): 29.4%\n• Dim 2 (Trend): 41.2%\n• Dim 3 (Expiry): 29.4%", fillcolor="#FEFCBF", color="#D69E2E"];
+
+        comp_score [label="Compute Final Composite Risk Score\nScore = Sum(Dimension Score x Adjusted Weight)\nNormalized to 0 – 100 Range", fillcolor="#C6F6D5", color="#38A169", fontname="Helvetica-Bold"];
+
+        d4 -> g_d4;
+        g_d4 -> w_standard [label="Yes (>=2 cycles)"];
+        g_d4 -> w_redist [label="No (<2 cycles)"];
+
+        d1 -> comp_score;
+        d2 -> comp_score;
+        d3 -> comp_score;
+        w_standard -> comp_score;
+        w_redist -> comp_score;
+    }
+
+    // Risk Classification & Action
+    subgraph cluster_action {
+        label="Phase 4: Risk Tiering & Next Best Action";
+        fontname="Helvetica-Bold";
+        fontsize=13;
+        fontcolor="#742A2A";
+        style="filled,rounded";
+        fillcolor="#FFF5F5";
+        color="#FEB2B2";
+
+        g_tier [label="Risk Tier\nBand?", shape="diamond", style="filled", fillcolor="#FEFCBF", color="#D69E2E", fontname="Helvetica-Bold"];
+        band_low [label="LOW RISK (0–29)\nHealthy Member Engagement", fillcolor="#C6F6D5", color="#38A169"];
+        band_med [label="MEDIUM RISK (30–59)\nEarly Deterioration Detected", fillcolor="#FEEBC8", color="#DD6B20"];
+        band_high [label="HIGH RISK (60–100)\nImminent Churn Threat", fillcolor="#FED7D7", color="#E53E3E", fontname="Helvetica-Bold"];
+
+        action_engine [label="Rule-Based Next Best Action Engine:\n• High Recency: 'Personal check-in call / SMS'\n• Expiring soon: 'Offer early renewal perk'\n• Trend drop: 'Recommend favorite class timeslot'", fillcolor="#E9D8FD", color="#6B46C1", fontname="Helvetica-Bold"];
+
+        gemini_narrative [label="Optional Gemini LLM Explanation:\nGrounded strictly in structured dimension facts\n(No speculative hallucinations)", fillcolor="#EBF8FF", color="#3182CE"];
+
+        out_queue [label="Publish Record to Studio Owner Attention Queue\n& Executive Retention Dashboard", shape="box", style="filled,rounded", fillcolor="#2B6CB0", color="#1A365D", fontcolor="#FFFFFF", fontname="Helvetica-Bold"];
+
+        comp_score -> g_tier;
+        g_tier -> band_low [label="0–29"];
+        g_tier -> band_med [label="30–59"];
+        g_tier -> band_high [label="60–100"];
+
+        band_med -> action_engine;
+        band_high -> action_engine;
+        action_engine -> gemini_narrative;
+        gemini_narrative -> out_queue;
+        band_low -> out_queue;
+        out_limited -> out_queue;
+    }
+}

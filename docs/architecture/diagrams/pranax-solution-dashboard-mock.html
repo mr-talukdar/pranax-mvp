@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PranaX Studio Overview Dashboard — High-Fidelity Landscape Wireframe Mockup</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+  body { background-color: #0F172A; color: #F8FAFC; width: 1920px; height: 1080px; overflow: hidden; display: flex; }
+  
+  /* Sidebar */
+  aside {
+    width: 260px;
+    background-color: #1E293B;
+    border-right: 1px solid #334155;
+    display: flex;
+    flex-direction: column;
+    padding: 24px 16px;
+    flex-shrink: 0;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; padding-left: 8px; }
+  .brand-logo { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, #0D9488, #0284C7); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 20px; color: white; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.4); }
+  .brand-name { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; color: #FFFFFF; }
+  .brand-pill { font-size: 10px; background: #0D9488; color: white; padding: 2px 6px; border-radius: 4px; font-weight: 600; margin-left: 4px; }
+  
+  .studio-switch {
+    background: #0F172A;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .studio-switch-name { font-size: 12px; font-weight: 600; color: #E2E8F0; }
+  .studio-switch-role { font-size: 10px; color: #94A3B8; }
+  .badge-tenant { font-size: 9px; background: rgba(13, 148, 136, 0.2); color: #2DD4BF; border: 1px solid #0D9488; padding: 2px 5px; border-radius: 4px; font-weight: 600; }
+  
+  nav { display: flex; flex-direction: column; gap: 6px; flex: 1; }
+  .nav-header { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: #64748B; font-weight: 700; margin: 12px 0 4px 8px; }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #94A3B8;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s;
+  }
+  .nav-item:hover { background-color: #334155; color: #F1F5F9; }
+  .nav-item.active { background-color: #0D9488; color: #FFFFFF; font-weight: 600; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3); }
+  .nav-badge { margin-left: auto; font-size: 10px; background: #EF4444; color: white; padding: 2px 7px; border-radius: 10px; font-weight: 700; }
+  .nav-badge.teal { background: rgba(13, 148, 136, 0.3); color: #2DD4BF; border: 1px solid #0D9488; }
+  
+  .sidebar-footer { padding-top: 16px; border-top: 1px solid #334155; display: flex; align-items: center; gap: 10px; }
+  .user-avatar { width: 34px; height: 34px; border-radius: 50%; background: #475569; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: white; border: 2px solid #0D9488; }
+  .user-info { flex: 1; }
+  .user-name { font-size: 12px; font-weight: 600; color: #F1F5F9; }
+  .user-role { font-size: 10px; color: #94A3B8; }
+  
+  /* Main Container */
+  main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: #0B1120;
+  }
+  
+  /* Topbar */
+  header {
+    height: 64px;
+    background: #1E293B;
+    border-bottom: 1px solid #334155;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 32px;
+    flex-shrink: 0;
+  }
+  .header-left { display: flex; align-items: center; gap: 16px; }
+  .page-title { font-size: 18px; font-weight: 700; color: #FFFFFF; }
+  .date-badge { font-size: 12px; background: #0F172A; border: 1px solid #334155; padding: 5px 12px; border-radius: 6px; color: #94A3B8; }
+  .header-right { display: flex; align-items: center; gap: 14px; }
+  .btn-secondary { background: #334155; border: 1px solid #475569; color: #E2E8F0; padding: 8px 16px; border-radius: 6px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .btn-primary { background: #0D9488; border: 1px solid #14B8A6; color: white; padding: 8px 18px; border-radius: 6px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 6px; cursor: pointer; box-shadow: 0 2px 8px rgba(13, 148, 136, 0.4); }
+  
+  /* Dashboard Content */
+  .content {
+    flex: 1;
+    padding: 24px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow-y: hidden;
+  }
+  
+  /* Row 1: KPI Cards */
+  .kpi-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; }
+  .kpi-card {
+    background: #1E293B;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+    position: relative;
+    overflow: hidden;
+  }
+  .kpi-card.highlight { border-color: #E11D48; background: linear-gradient(180deg, #1E293B 0%, rgba(225, 29, 72, 0.1) 100%); }
+  .kpi-card.warning { border-color: #D97706; background: linear-gradient(180deg, #1E293B 0%, rgba(217, 119, 6, 0.1) 100%); }
+  .kpi-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #94A3B8; }
+  .kpi-value-row { display: flex; align-items: baseline; gap: 10px; margin: 8px 0 4px 0; }
+  .kpi-value { font-size: 28px; font-weight: 800; color: #FFFFFF; letter-spacing: -0.5px; }
+  .kpi-trend { font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 4px; }
+  .kpi-trend.up { background: rgba(34, 197, 94, 0.2); color: #4ADE80; }
+  .kpi-trend.alert { background: rgba(239, 68, 68, 0.2); color: #F87171; }
+  .kpi-subtext { font-size: 10px; color: #64748B; }
+
+  /* Row 2: Secondary Visualizers */
+  .visual-grid { display: grid; grid-template-columns: 1.2fr 0.8fr 1fr; gap: 16px; }
+  .panel {
+    background: #1E293B;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+  }
+  .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .panel-title { font-size: 13px; font-weight: 700; color: #F1F5F9; display: flex; align-items: center; gap: 8px; }
+  .panel-subtitle { font-size: 11px; color: #64748B; }
+
+  /* Bar chart mock */
+  .chart-bars { display: flex; align-items: flex-end; gap: 14px; height: 85px; padding-top: 10px; }
+  .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end; }
+  .bar { width: 100%; border-radius: 4px 4px 0 0; background: #0D9488; }
+  .bar.today { background: linear-gradient(180deg, #38BDF8, #0284C7); box-shadow: 0 0 10px rgba(56, 189, 248, 0.5); }
+  .bar-label { font-size: 10px; color: #94A3B8; font-weight: 600; }
+  .bar-val { font-size: 9px; color: #CBD5E1; font-weight: 700; }
+
+  /* Membership Breakdown items */
+  .mem-breakdown { display: flex; flex-direction: column; gap: 8px; justify-content: center; height: 85px; }
+  .mem-row { display: flex; justify-content: space-between; align-items: center; font-size: 11px; }
+  .mem-bar-bg { width: 100%; height: 6px; background: #334155; border-radius: 3px; overflow: hidden; margin-top: 2px; }
+  .mem-bar-fill { height: 100%; border-radius: 3px; }
+
+  /* Retention Donut / Tier visual */
+  .ret-tiers { display: flex; align-items: center; justify-content: space-around; height: 85px; }
+  .tier-box { text-align: center; padding: 6px 12px; border-radius: 8px; background: #0F172A; border: 1px solid #334155; }
+  .tier-num { font-size: 18px; font-weight: 800; }
+  .tier-label { font-size: 10px; font-weight: 600; text-transform: uppercase; margin-top: 2px; }
+
+  /* Row 3: Attention Queue Table */
+  .queue-panel {
+    background: #1E293B;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 18px 20px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+  }
+  .queue-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .queue-title-area { display: flex; align-items: center; gap: 12px; }
+  .queue-title { font-size: 14px; font-weight: 700; color: #F1F5F9; }
+  .queue-pill { font-size: 11px; background: rgba(225, 29, 72, 0.2); color: #FB7185; border: 1px solid #E11D48; padding: 2px 8px; border-radius: 12px; font-weight: 700; }
+  .filter-group { display: flex; gap: 8px; }
+  .btn-filter { background: #0F172A; border: 1px solid #334155; color: #94A3B8; font-size: 11px; padding: 4px 10px; border-radius: 6px; cursor: pointer; }
+  .btn-filter.active { background: #334155; color: white; border-color: #475569; }
+
+  table { width: 100%; border-collapse: collapse; text-align: left; }
+  th { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #64748B; padding: 10px 12px; border-bottom: 1px solid #334155; }
+  td { font-size: 12px; padding: 10px 12px; border-bottom: 1px solid #1E293B; vertical-align: middle; }
+  tr:hover td { background-color: rgba(51, 65, 85, 0.5); }
+
+  .member-cell { display: flex; align-items: center; gap: 10px; }
+  .avatar { width: 30px; height: 30px; border-radius: 50%; background: #334155; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #E2E8F0; }
+  .member-name { font-weight: 600; color: #F8FAFC; }
+  .member-plan { font-size: 10px; color: #94A3B8; }
+
+  .badge-risk { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 11px; }
+  .badge-risk.high { background: rgba(239, 68, 68, 0.2); color: #F87171; border: 1px solid #DC2626; }
+  .badge-risk.med { background: rgba(245, 158, 11, 0.2); color: #FBBF24; border: 1px solid #D97706; }
+  .badge-risk.low { background: rgba(34, 197, 94, 0.2); color: #4ADE80; border: 1px solid #16A34A; }
+
+  .metric-tag { font-family: monospace; font-size: 11px; color: #CBD5E1; background: #0F172A; padding: 2px 6px; border-radius: 4px; border: 1px solid #334155; }
+  .metric-tag.drop { color: #F87171; border-color: rgba(239, 68, 68, 0.4); }
+
+  .action-box { display: flex; align-items: center; gap: 8px; }
+  .action-text { font-size: 11px; color: #E2E8F0; font-weight: 500; }
+  .btn-action { background: #0284C7; color: white; border: none; padding: 5px 12px; border-radius: 5px; font-size: 11px; font-weight: 600; cursor: pointer; }
+  .btn-action.red { background: #E11D48; }
+
+  /* Drawer / Modal Overlay Mock in Landscape */
+  .inspect-drawer {
+    width: 320px;
+    background: #182234;
+    border-left: 1px solid #334155;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    flex-shrink: 0;
+  }
+  .drawer-title { font-size: 13px; font-weight: 700; color: #F8FAFC; border-bottom: 1px solid #334155; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+  .drawer-badge { font-size: 10px; background: #0D9488; color: white; padding: 2px 6px; border-radius: 4px; }
+  .dim-list { display: flex; flex-direction: column; gap: 10px; }
+  .dim-item { background: #0F172A; border: 1px solid #334155; border-radius: 8px; padding: 8px 10px; }
+  .dim-head { display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; color: #CBD5E1; }
+  .dim-score { font-family: monospace; font-size: 11px; font-weight: 700; color: #F43F5E; }
+  .dim-bar { height: 4px; background: #334155; border-radius: 2px; margin-top: 6px; overflow: hidden; }
+  .dim-fill { height: 100%; background: #F43F5E; }
+  .ai-box { background: rgba(13, 148, 136, 0.15); border: 1px solid #0D9488; border-radius: 8px; padding: 10px; font-size: 11px; color: #CCFBF1; line-height: 1.4; }
+  .ai-box b { color: #5EEAD4; }
+</style>
+</head>
+<body>
+
+  <!-- Left Sidebar -->
+  <aside>
+    <div class="brand">
+      <div class="brand-logo">P</div>
+      <div>
+        <div class="brand-name">PranaX <span class="brand-pill">MVP</span></div>
+      </div>
+    </div>
+
+    <div class="studio-switch">
+      <div>
+        <div class="studio-switch-name">Prana Shala Chelsea</div>
+        <div class="studio-switch-role">Owner Admin Context</div>
+      </div>
+      <span class="badge-tenant">RLS OK</span>
+    </div>
+
+    <nav>
+      <div class="nav-header">Operations</div>
+      <a class="nav-item active">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/></svg>
+        Overview (Dashboard)
+      </a>
+      <a class="nav-item">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        Member Directory
+      </a>
+      <a class="nav-item">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Attendance & Check-in
+      </a>
+      <a class="nav-item">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        CSV Attendance Import
+      </a>
+
+      <div class="nav-header">Retention & AI</div>
+      <a class="nav-item">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Attention Queue
+        <span class="nav-badge">7 High</span>
+      </a>
+      <a class="nav-item">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zM12 6a4 4 0 110 8 4 4 0 010-8z"/></svg>
+        Gemini Assistant
+        <span class="nav-badge teal">AI</span>
+      </a>
+
+      <div class="nav-header">Configuration</div>
+      <a class="nav-item">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        Studio Settings
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-avatar">RS</div>
+      <div class="user-info">
+        <div class="user-name">Rahul Sharma</div>
+        <div class="user-role">Lead Studio Admin</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Application Body -->
+  <main>
+    <!-- Topbar -->
+    <header>
+      <div class="header-left">
+        <h1 class="page-title">Studio Overview</h1>
+        <div class="date-badge">Saturday, Nov 21, 2026 • Timezone: America/New_York (EST)</div>
+      </div>
+      <div class="header-right">
+        <button class="btn-secondary">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Import CSV
+        </button>
+        <button class="btn-primary">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+          Quick Check-in
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <div class="content">
+
+      <!-- Row 1: KPI Metrics -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">Active Members</div>
+          <div class="kpi-value-row">
+            <div class="kpi-value">142</div>
+            <span class="kpi-trend up">+6 this month</span>
+          </div>
+          <div class="kpi-subtext">Across 3 predefined tiers</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-label">Attendance Today</div>
+          <div class="kpi-value-row">
+            <div class="kpi-value">28</div>
+            <span class="kpi-trend up">+27% vs Sat avg</span>
+          </div>
+          <div class="kpi-subtext">28 unique visits (deduped)</div>
+        </div>
+
+        <div class="kpi-card highlight">
+          <div class="kpi-label" style="color: #FB7185;">High-Risk Members</div>
+          <div class="kpi-value-row">
+            <div class="kpi-value" style="color: #F43F5E;">7</div>
+            <span class="kpi-trend alert">Action Required</span>
+          </div>
+          <div class="kpi-subtext">Retention score &ge; 60/100</div>
+        </div>
+
+        <div class="kpi-card warning">
+          <div class="kpi-label" style="color: #FBBF24;">Expiring in 7 Days</div>
+          <div class="kpi-value-row">
+            <div class="kpi-value" style="color: #F59E0B;">9</div>
+            <span class="kpi-trend alert">Needs Renewal</span>
+          </div>
+          <div class="kpi-subtext">4 with declining visits</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-label">60-Day Retention Rate</div>
+          <div class="kpi-value-row">
+            <div class="kpi-value">88.4%</div>
+            <span class="kpi-trend up">+2.1% MoM</span>
+          </div>
+          <div class="kpi-subtext">Eligible cohort (&ge;60d history)</div>
+        </div>
+      </div>
+
+      <!-- Row 2: Secondary Visualizers -->
+      <div class="visual-grid">
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">Weekly Attendance Distribution</div>
+              <div class="panel-subtitle">Rolling 7-day visit volume (Deduplicated per member/day)</div>
+            </div>
+            <span class="metric-tag">194 Total Visits</span>
+          </div>
+          <div class="chart-bars">
+            <div class="bar-col"><div class="bar-val">24</div><div class="bar" style="height: 60%;"></div><div class="bar-label">Mon</div></div>
+            <div class="bar-col"><div class="bar-val">29</div><div class="bar" style="height: 72%;"></div><div class="bar-label">Tue</div></div>
+            <div class="bar-col"><div class="bar-val">26</div><div class="bar" style="height: 65%;"></div><div class="bar-label">Wed</div></div>
+            <div class="bar-col"><div class="bar-val">31</div><div class="bar" style="height: 78%;"></div><div class="bar-label">Thu</div></div>
+            <div class="bar-col"><div class="bar-val">34</div><div class="bar" style="height: 85%;"></div><div class="bar-label">Fri</div></div>
+            <div class="bar-col"><div class="bar-val">28</div><div class="bar today" style="height: 70%;"></div><div class="bar-label" style="color:#38BDF8;">Today</div></div>
+            <div class="bar-col"><div class="bar-val">22</div><div class="bar" style="height: 55%; opacity: 0.5;"></div><div class="bar-label">Sun</div></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">Membership Status Funnel</div>
+              <div class="panel-subtitle">Lifecycle breakdown</div>
+            </div>
+          </div>
+          <div class="mem-breakdown">
+            <div>
+              <div class="mem-row"><span>Active Memberships</span><b>118</b></div>
+              <div class="mem-bar-bg"><div class="mem-bar-fill" style="width: 83%; background: #0D9488;"></div></div>
+            </div>
+            <div>
+              <div class="mem-row"><span>Paused (Suspended Risk)</span><b>15</b></div>
+              <div class="mem-bar-bg"><div class="mem-bar-fill" style="width: 11%; background: #64748B;"></div></div>
+            </div>
+            <div>
+              <div class="mem-row"><span>Expiring (Within 7d)</span><b style="color:#F59E0B;">9</b></div>
+              <div class="mem-bar-bg"><div class="mem-bar-fill" style="width: 6%; background: #F59E0B;"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">Retention Risk Distribution</div>
+              <div class="panel-subtitle">Deterministic 4-Dim Scoring</div>
+            </div>
+            <span class="badge-tenant">v1.0 Model</span>
+          </div>
+          <div class="ret-tiers">
+            <div class="tier-box">
+              <div class="tier-num" style="color: #4ADE80;">98</div>
+              <div class="tier-label" style="color: #4ADE80;">Low (0–29)</div>
+            </div>
+            <div class="tier-box">
+              <div class="tier-num" style="color: #FBBF24;">18</div>
+              <div class="tier-label" style="color: #FBBF24;">Med (30–59)</div>
+            </div>
+            <div class="tier-box" style="border-color: #E11D48;">
+              <div class="tier-num" style="color: #F43F5E;">7</div>
+              <div class="tier-label" style="color: #F43F5E;">High (60–100)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 3: Main Attention Queue Table -->
+      <div class="queue-panel">
+        <div class="queue-header">
+          <div class="queue-title-area">
+            <h2 class="queue-title">Retention Attention Queue</h2>
+            <span class="queue-pill">7 Members Needing Immediate Action</span>
+          </div>
+          <div class="filter-group">
+            <button class="btn-filter active">All At-Risk (25)</button>
+            <button class="btn-filter">High Risk Only (7)</button>
+            <button class="btn-filter">Expiring Soon (9)</button>
+            <button class="btn-filter">Inactivity &ge; 30d (5)</button>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Member Name & Plan</th>
+              <th>Last Visit</th>
+              <th>30d Trend</th>
+              <th>Effective Expiry</th>
+              <th>Risk Score</th>
+              <th>Recommended Next Best Action</th>
+              <th style="text-align: right;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="background: rgba(225, 29, 72, 0.08);">
+              <td>
+                <div class="member-cell">
+                  <div class="avatar" style="border: 2px solid #F43F5E;">SM</div>
+                  <div>
+                    <div class="member-name">Sophia Martinez</div>
+                    <div class="member-plan">Annual Unlimited • ID: MEM-0842</div>
+                  </div>
+                </div>
+              </td>
+              <td><span class="metric-tag drop">34 days ago</span></td>
+              <td><span class="metric-tag drop">-72% (9 &rarr; 2)</span></td>
+              <td><span class="metric-tag drop">5 days left</span></td>
+              <td><span class="badge-risk high">84 &bull; HIGH</span></td>
+              <td>
+                <div class="action-box">
+                  <span class="action-text">Call to offer 1:1 reformer re-entry & 10% renewal perk</span>
+                </div>
+              </td>
+              <td style="text-align: right;">
+                <button class="btn-action red">Contact Member</button>
+              </td>
+            </tr>
+
+            <tr style="background: rgba(225, 29, 72, 0.04);">
+              <td>
+                <div class="member-cell">
+                  <div class="avatar" style="border: 2px solid #F43F5E;">MC</div>
+                  <div>
+                    <div class="member-name">Marcus Chen</div>
+                    <div class="member-plan">Monthly Recurring • ID: MEM-0913</div>
+                  </div>
+                </div>
+              </td>
+              <td><span class="metric-tag drop">21 days ago</span></td>
+              <td><span class="metric-tag drop">-55% (8 &rarr; 3)</span></td>
+              <td><span class="metric-tag">12 days left</span></td>
+              <td><span class="badge-risk high">76 &bull; HIGH</span></td>
+              <td>
+                <div class="action-box">
+                  <span class="action-text">Send personalized WhatsApp check-in with weekend schedule</span>
+                </div>
+              </td>
+              <td style="text-align: right;">
+                <button class="btn-action red">Contact Member</button>
+              </td>
+            </tr>
+
+            <tr>
+              <td>
+                <div class="member-cell">
+                  <div class="avatar" style="border: 2px solid #F59E0B;">ER</div>
+                  <div>
+                    <div class="member-name">Elena Rostova</div>
+                    <div class="member-plan">Quarterly Pack • ID: MEM-0744</div>
+                  </div>
+                </div>
+              </td>
+              <td><span class="metric-tag">16 days ago</span></td>
+              <td><span class="metric-tag drop">-35% (6 &rarr; 4)</span></td>
+              <td><span class="metric-tag">18 days left</span></td>
+              <td><span class="badge-risk med">48 &bull; MEDIUM</span></td>
+              <td>
+                <div class="action-box">
+                  <span class="action-text">Recommend favorite Saturday morning Vinyasa slot</span>
+                </div>
+              </td>
+              <td style="text-align: right;">
+                <button class="btn-action">Review Profile</button>
+              </td>
+            </tr>
+
+            <tr>
+              <td>
+                <div class="member-cell">
+                  <div class="avatar" style="border: 2px solid #F59E0B;">DK</div>
+                  <div>
+                    <div class="member-name">David Kim</div>
+                    <div class="member-plan">Monthly Recurring • ID: MEM-1029</div>
+                  </div>
+                </div>
+              </td>
+              <td><span class="metric-tag">14 days ago</span></td>
+              <td><span class="metric-tag">-20% (5 &rarr; 4)</span></td>
+              <td><span class="metric-tag">28 days left</span></td>
+              <td><span class="badge-risk med">38 &bull; MEDIUM</span></td>
+              <td>
+                <div class="action-box">
+                  <span class="action-text">Send 14-day engagement pulse survey via automated email</span>
+                </div>
+              </td>
+              <td style="text-align: right;">
+                <button class="btn-action">Review Profile</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Right Side Inspection Drawer (Grounded Evidence Mock) -->
+  <aside class="inspect-drawer">
+    <div class="drawer-title">
+      <span>Evidence: Sophia Martinez</span>
+      <span class="drawer-badge">Score: 84</span>
+    </div>
+
+    <div class="dim-list">
+      <div class="dim-item">
+        <div class="dim-head">
+          <span>1. Recency (25% wt)</span>
+          <span class="dim-score">Subscore: 65</span>
+        </div>
+        <div style="font-size: 10px; color: #94A3B8; margin-top:2px;">34 days since last check-in (Oct 18)</div>
+        <div class="dim-bar"><div class="dim-fill" style="width: 65%;"></div></div>
+      </div>
+
+      <div class="dim-item">
+        <div class="dim-head">
+          <span>2. Attendance Trend (35% wt)</span>
+          <span class="dim-score">Subscore: 70</span>
+        </div>
+        <div style="font-size: 10px; color: #94A3B8; margin-top:2px;">72% decline: 9 visits &rarr; 2 visits (30d)</div>
+        <div class="dim-bar"><div class="dim-fill" style="width: 70%;"></div></div>
+      </div>
+
+      <div class="dim-item">
+        <div class="dim-head">
+          <span>3. Lifecycle Expiry (25% wt)</span>
+          <span class="dim-score" style="color: #EF4444;">Subscore: 100</span>
+        </div>
+        <div style="font-size: 10px; color: #94A3B8; margin-top:2px;">5 days remaining on Annual Plan</div>
+        <div class="dim-bar"><div class="dim-fill" style="width: 100%; background: #EF4444;"></div></div>
+      </div>
+
+      <div class="dim-item">
+        <div class="dim-head">
+          <span>4. Historical Renewal (15% wt)</span>
+          <span class="dim-score" style="color: #38BDF8;">Redistributed</span>
+        </div>
+        <div style="font-size: 10px; color: #94A3B8; margin-top:2px;">&lt; 2 cycles: Weight shifted to D1-D3</div>
+      </div>
+    </div>
+
+    <div class="ai-box">
+      <b>Gemini AI Retention Narrative:</b><br/>
+      "Sophia's attendance sharply collapsed 5 weeks ago after 9 consecutive months of regular 3x/week visits. With her annual contract expiring in 5 days, churn probability without intervention is critical. Immediate phone contact is advised."
+    </div>
+
+    <button class="btn-action red" style="padding: 10px; width: 100%; font-size: 12px; margin-top: auto;">Log Retention Outreach</button>
+  </aside>
+
+</body>
+</html>
