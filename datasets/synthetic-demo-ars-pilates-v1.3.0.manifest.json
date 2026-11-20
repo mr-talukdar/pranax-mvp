@@ -1,0 +1,50 @@
+{
+  "config": {
+    "branch": "Salt Lake Studio",
+    "dataset_version": "1.3.0",
+    "evaluation_date": "2026-11-20",
+    "generator_version": "1.3.0",
+    "member_count": 350,
+    "months": 15,
+    "seed": 20261120,
+    "studio_id": "d9b73462-1111-4000-8000-000000000001",
+    "studio_name": "ARS Pilates & Fitness",
+    "timezone": "Asia/Kolkata"
+  },
+  "datasetVersion": "1.3.0",
+  "entityCounts": {
+    "attendanceImportBatches": 1,
+    "attendanceRecords": 20882,
+    "churnPredictions": 0,
+    "members": 350,
+    "membershipPauses": 22,
+    "membershipPeriods": 1318,
+    "membershipPlans": 3,
+    "retentionSnapshots": 0,
+    "scenarios": 10,
+    "studioSettings": 1,
+    "studios": 1
+  },
+  "generatedAt": "2026-11-20T00:00:00Z",
+  "generatorVersion": "1.3.0",
+  "scenarioIds": [
+    "attendance-coverage-60-days",
+    "last-attendance-45-days-ago",
+    "zero-visits-complete-coverage",
+    "incomplete-attendance-coverage",
+    "two-non-renewal-opportunities",
+    "renewal-on-grace-day-12",
+    "two-membership-pauses",
+    "churn-then-reactivation",
+    "approaching-expiry-confirmed-renewal",
+    "insufficient-retention-history"
+  ],
+  "schemaVersion": "prisma-foundation-v2",
+  "seed": 20261120,
+  "syntheticIntelligence": {
+    "churnPredictionsIncluded": false,
+    "limitation": "No synthetic intelligence outputs are operational results.",
+    "retentionSnapshotsIncluded": false
+  },
+  "syntheticStudioId": "d9b73462-1111-4000-8000-000000000001"
+}

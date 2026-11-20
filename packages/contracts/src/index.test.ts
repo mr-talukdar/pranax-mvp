@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
   memberCreateSchema,
+  memberUpdateSchema,
+  membershipCreateSchema,
+  membershipPauseSchema,
+  membershipResumeSchema,
+  membershipCancelSchema,
+  attendanceCheckInSchema,
+  attendanceImportRequestSchema,
   retentionAssessmentResponseSchema,
   retentionAssessmentOutputSchema,
   retentionHistoryResponseSchema,
@@ -119,5 +126,50 @@ describe('retention snapshot API contracts', () => {
         pagination: { limit: 0, offset: 0, has_more: false },
       }).success,
     ).toBe(false);
+  });
+});
+
+describe('F01 and F02 operations contracts', () => {
+  it('validates member update schema with optional and empty string transform', () => {
+    const parsed = memberUpdateSchema.parse({
+      firstName: 'Jane',
+      email: '',
+      phone: '+91 99999 88888',
+    });
+    expect(parsed.firstName).toBe('Jane');
+    expect(parsed.email).toBeNull();
+  });
+
+  it('validates membership lifecycle schemas', () => {
+    expect(
+      membershipCreateSchema.safeParse({ planType: 'MONTHLY' }).success,
+    ).toBe(true);
+    expect(membershipCreateSchema.safeParse({}).success).toBe(false);
+    expect(
+      membershipPauseSchema.safeParse({ startsAt: '2026-06-01' }).success,
+    ).toBe(true);
+    expect(
+      membershipResumeSchema.safeParse({ resumesAt: '2026-06-10' }).success,
+    ).toBe(true);
+    expect(
+      membershipCancelSchema.safeParse({ effectiveDate: '2026-06-15' }).success,
+    ).toBe(true);
+  });
+
+  it('validates attendance check-in and import schemas', () => {
+    expect(
+      attendanceCheckInSchema.safeParse({
+        memberId: '00000000-0000-4000-8000-000000000001',
+      }).success,
+    ).toBe(true);
+    expect(
+      attendanceCheckInSchema.safeParse({ memberId: 'invalid' }).success,
+    ).toBe(false);
+
+    expect(
+      attendanceImportRequestSchema.safeParse({
+        csvContent: 'email,attendance_timestamp\ntest@example.com,2026-06-25T09:30:00Z',
+      }).success,
+    ).toBe(true);
   });
 });

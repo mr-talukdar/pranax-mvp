@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 
 import { getStudioContext } from '../../../server/auth/context';
 import { createMember, listMembers } from '../../../server/services/members';
-import { memberCreateSchema } from '../../../server/validation/members';
+import { memberCreateSchema, memberListQuerySchema } from '@pranax/contracts';
+import { ServiceError } from '../../../server/services/errors';
 
 export async function GET(request: Request) {
   const context = await getStudioContext(
@@ -11,12 +12,29 @@ export async function GET(request: Request) {
   if (!context) {
     return NextResponse.json(
       { error: 'A server-established studio context is required.' },
+      { status: 401 },
+    );
+  }
+
+  const { searchParams } = new URL(request.url);
+  const queryParse = memberListQuerySchema.safeParse({
+    search: searchParams.get('search') || undefined,
+    status: searchParams.get('status') || undefined,
+    limit: searchParams.get('limit') || undefined,
+    offset: searchParams.get('offset') || undefined,
+    sort: searchParams.get('sort') || undefined,
+  });
+
+  if (!queryParse.success) {
+    return NextResponse.json(
+      { error: 'Invalid query parameters.', details: queryParse.error.flatten() },
       { status: 400 },
     );
   }
 
   try {
-    return NextResponse.json({ data: await listMembers(context) });
+    const result = await listMembers(context, queryParse.data);
+    return NextResponse.json(result);
   } catch (error) {
     console.error('Failed to list members', error);
     return NextResponse.json(
@@ -33,7 +51,7 @@ export async function POST(request: Request) {
   if (!context) {
     return NextResponse.json(
       { error: 'A server-established studio context is required.' },
-      { status: 400 },
+      { status: 401 },
     );
   }
 
@@ -56,11 +74,15 @@ export async function POST(request: Request) {
   }
 
   try {
-    return NextResponse.json(
-      { data: await createMember(context, parsed.data) },
-      { status: 201 },
-    );
+    const member = await createMember(context, parsed.data);
+    return NextResponse.json({ data: member }, { status: 201 });
   } catch (error) {
+    if (error instanceof ServiceError) {
+      return NextResponse.json(
+        { error: error.message, code: error.code },
+        { status: error.statusCode },
+      );
+    }
     console.error('Failed to create member', error);
     return NextResponse.json(
       { error: 'An unexpected server error occurred.' },

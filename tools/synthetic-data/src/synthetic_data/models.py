@@ -6,19 +6,22 @@ from typing import Any
 
 @dataclass(frozen=True)
 class GeneratorConfig:
-    seed: int = 20251120
+    seed: int = 20261120
     member_count: int = 350
-    months: int = 12
-    generator_version: str = "1.2.0"
-    dataset_version: str = "1.2.0"
-    evaluation_date: str = "2025-12-31"
-    timezone: str = "America/New_York"
+    months: int = 15
+    generator_version: str = "1.3.0"
+    dataset_version: str = "1.3.0"
+    evaluation_date: str = "2026-11-20"
+    timezone: str = "Asia/Kolkata"
+    studio_name: str = "ARS Pilates & Fitness"
+    branch: str = "Salt Lake Studio"
+    studio_id: str | None = "d9b73462-1111-4000-8000-000000000001"
 
     def __post_init__(self) -> None:
         if not 300 <= self.member_count <= 500:
             raise ValueError("member_count must be between 300 and 500")
-        if self.months != 12:
-            raise ValueError("the frozen baseline requires exactly 12 months")
+        if not (12 <= self.months <= 18):
+            raise ValueError("months must be between 12 and 18")
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)
