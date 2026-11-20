@@ -50,7 +50,7 @@ function isAccessTokenExpired(token: string): boolean {
     const payload = token.split('.')[1];
     if (!payload) return true;
     const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
-    const claims = JSON.parse(window.atob(base64)) as { exp?: unknown };
+    const claims = JSON.parse(globalThis.window.atob(base64)) as { exp?: unknown };
     return typeof claims.exp !== 'number' || claims.exp * 1000 <= Date.now() + 30_000;
   } catch {
     return true;
@@ -58,12 +58,12 @@ function isAccessTokenExpired(token: string): boolean {
 }
 
 export async function ensureAuth(): Promise<string | null> {
-  if (typeof window === 'undefined') {
+  if (typeof globalThis.window === 'undefined') {
     return null;
   }
   if (!cachedToken) {
     try {
-      cachedToken = window.localStorage.getItem('pranax_demo_token');
+      cachedToken = globalThis.window.localStorage.getItem('pranax_demo_token');
     } catch {
       // Storage may be unavailable in restricted browser contexts.
     }
@@ -71,7 +71,7 @@ export async function ensureAuth(): Promise<string | null> {
   if (cachedToken && isAccessTokenExpired(cachedToken)) {
     cachedToken = null;
     try {
-      window.localStorage.removeItem('pranax_demo_token');
+      globalThis.window.localStorage.removeItem('pranax_demo_token');
     } catch {
       // Continue without a cached token when storage is unavailable.
     }
@@ -92,7 +92,7 @@ export async function ensureAuth(): Promise<string | null> {
           cachedToken = json.data?.accessToken ?? null;
           if (cachedToken) {
             try {
-              window.localStorage.setItem('pranax_demo_token', cachedToken);
+              globalThis.window.localStorage.setItem('pranax_demo_token', cachedToken);
             } catch {
               // Keep the in-memory token when persistent storage is unavailable.
             }
