@@ -194,12 +194,15 @@ model RetentionSnapshot {
   recommendation  String?
   isComplete      Boolean
   scoringVersion  String
+  assessmentMetadata Json?
+  assessmentFingerprint String               @db.Char(64)
   createdAt       DateTime              @default(now()) @db.Timestamptz(6)
   studio          Studio                @relation(fields: [studioId], references: [id], onDelete: Cascade)
   member          Member                @relation(fields: [memberId, studioId], references: [id, studioId], onDelete: Restrict)
 
-  @@unique([studioId, memberId, snapshotDate, snapshotType, scoringVersion])
+  @@unique([studioId, memberId, snapshotDate, scoringVersion, assessmentFingerprint], map: "RetentionSnapshot_assessmentFingerprint_key")
   @@index([studioId, category, snapshotDate])
+  @@index([studioId, memberId, snapshotDate, createdAt])
 }
 
 model ChurnPrediction {

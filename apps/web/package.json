@@ -6,13 +6,14 @@
     "build": "next build",
     "dev": "next dev",
     "start": "next start",
+    "test": "vitest run",
     "pretypecheck": "pnpm --filter @pranax/database build && pnpm --filter @pranax/contracts build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint src"
   },
   "dependencies": {
-    "@pranax/database": "workspace:*",
     "@pranax/contracts": "workspace:*",
+    "@pranax/database": "workspace:*",
     "@supabase/ssr": "0.12.7",
     "@supabase/supabase-js": "2.119.2",
     "next": "15.5.2",
@@ -25,6 +26,7 @@
     "@types/node": "24.3.0",
     "@types/react": "19.1.12",
     "@types/react-dom": "19.1.9",
-    "typescript": "5.9.2"
+    "typescript": "5.9.2",
+    "vitest": "3.2.4"
   }
 }

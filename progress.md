@@ -8,32 +8,32 @@ Progress is evidence-based. A task is complete only when its implementation and 
 
 ## Current Summary
 
-| Area                        | Status                                | Evidence                                                                                                                                                               |
-| --------------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Next.js application backend | In progress                           | Server-side auth, database, validation, service modules and `/api/members` Route Handlers are present.                                                                 |
-| Supabase Auth               | Blocked for full browser verification | Server-side `getUser()` and StudioUser membership resolution exist; real Auth sign-in/StudioUser flows were not fully exercised.                                       |
-| PostgreSQL and Prisma       | Complete for foundation               | Prisma schema, baseline migration, local Supabase migration, constraints and RLS policies are present.                                                                 |
-| Synthetic Data Factory      | Complete for foundation               | Version 1.2 exports 350 members, 441 periods, 36 pauses and 2,356 attendance records.                                                                                  |
-| Seed loader                 | Complete for foundation               | Repeat execution skipped 3,189 records with zero inserts and zero rejections.                                                                                          |
-| MVP member/attendance UI    | Not started                           | Foundation only; product feature tasks remain pending.                                                                                                                 |
-| Retention engine            | In progress                           | Deterministic Python engine, authenticated FastAPI endpoint, and tenant-scoped Next.js assessment route are implemented; database-backed Auth flow remains unverified. |
-| Churn ML                    | Deferred                              | Synthetic predictions are excluded; no trained model is implemented.                                                                                                   |
-| Conversational intelligence | Deferred                              | No product implementation.                                                                                                                                             |
-| Owner dashboard             | Not started                           | No operational dashboard workflow is implemented.                                                                                                                      |
+| Area                        | Status                                | Evidence                                                                                                                                                                                                     |
+| --------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Next.js application backend | In progress                           | Server-side auth, database, validation, service modules and `/api/members` Route Handlers are present.                                                                                                       |
+| Supabase Auth               | Blocked for full browser verification | Server-side `getUser()` and StudioUser membership resolution exist; real Auth sign-in/StudioUser flows were not fully exercised.                                                                             |
+| PostgreSQL and Prisma       | Complete for foundation               | Prisma schema, baseline migration, local Supabase migration, constraints and RLS policies are present.                                                                                                       |
+| Synthetic Data Factory      | Complete for foundation               | Version 1.2 exports 350 members, 441 periods, 36 pauses and 2,356 attendance records.                                                                                                                        |
+| Seed loader                 | Complete for foundation               | Repeat execution skipped 3,189 records with zero inserts and zero rejections.                                                                                                                                |
+| MVP member/attendance UI    | Not started                           | Foundation only; product feature tasks remain pending.                                                                                                                                                       |
+| Retention engine            | In progress                           | Deterministic Python engine, authenticated FastAPI endpoint, immutable snapshot persistence, typed history API, and focused persistence tests are implemented; database-backed Auth flow remains unverified. |
+| Churn ML                    | Deferred                              | Synthetic predictions are excluded; no trained model is implemented.                                                                                                                                         |
+| Conversational intelligence | Deferred                              | No product implementation.                                                                                                                                                                                   |
+| Owner dashboard             | Not started                           | No operational dashboard workflow is implemented.                                                                                                                                                            |
 
 ## Backlog Phase Status
 
-| Phase                                       | Status          | Notes                                                                                                                                               |
-| ------------------------------------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Phase 0 - Sprint setup                      | In progress     | Workspace, scripts, environment documentation and local Supabase setup are established. Git pull and team demo setup remain external.               |
-| Phase 1 - Tenant and application foundation | In progress     | Next.js server modules and RLS foundations exist; final browser Auth acceptance remains untested.                                                   |
-| Phase 2 - Member management                 | Partial         | Server-side member list/create operations exist, but profile editing and membership UI/workflows are not implemented.                               |
-| Phase 3 - Attendance tracking               | Foundation only | Attendance persistence and synthetic attendance exist; manual UI/import workflow is not implemented.                                                |
-| Phase 4 - Retention intelligence            | In progress     | RET-01 through RET-07 have a deterministic engine, typed contracts, API, and focused tests. Snapshot history and retention UI remain unimplemented. |
-| Phase 5 - Owner dashboard                   | Not started     | No dashboard feature implementation.                                                                                                                |
-| Phase 6 - Churn ML                          | Deferred        | Schema support exists; no model training or inference.                                                                                              |
-| Phase 7 - Conversational intelligence       | Deferred        | No implementation.                                                                                                                                  |
-| Phase 8 - Integration, QA and demo          | Partial         | TypeScript, database and synthetic checks pass; full end-to-end MVP workflow is not implemented.                                                    |
+| Phase                                       | Status          | Notes                                                                                                                                                          |
+| ------------------------------------------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Phase 0 - Sprint setup                      | In progress     | Workspace, scripts, environment documentation and local Supabase setup are established. Git pull and team demo setup remain external.                          |
+| Phase 1 - Tenant and application foundation | In progress     | Next.js server modules and RLS foundations exist; final browser Auth acceptance remains untested.                                                              |
+| Phase 2 - Member management                 | Partial         | Server-side member list/create operations exist, but profile editing and membership UI/workflows are not implemented.                                          |
+| Phase 3 - Attendance tracking               | Foundation only | Attendance persistence and synthetic attendance exist; manual UI/import workflow is not implemented.                                                           |
+| Phase 4 - Retention intelligence            | In progress     | RET-01 through RET-08 persistence and history APIs are implemented. Retention UI and full browser/Auth/PostgreSQL integration verification remain outstanding. |
+| Phase 5 - Owner dashboard                   | Not started     | No dashboard feature implementation.                                                                                                                           |
+| Phase 6 - Churn ML                          | Deferred        | Schema support exists; no model training or inference.                                                                                                         |
+| Phase 7 - Conversational intelligence       | Deferred        | No implementation.                                                                                                                                             |
+| Phase 8 - Integration, QA and demo          | Partial         | TypeScript, database and synthetic checks pass; full end-to-end MVP workflow is not implemented.                                                               |
 
 ## Verified Foundation Tasks
 
@@ -97,10 +97,16 @@ Progress is evidence-based. A task is complete only when its implementation and 
 - [x] Unavailable dimensions are excluded and configured weights are proportionally redistributed.
 - [x] Exactly one deterministic recommendation is returned for complete, limited, and excluded results.
 - [x] FastAPI assessment requests require the configured shared service bearer token; health remains available.
-- [x] Next.js retrieves evidence in verified studio scope and validates the service response; snapshots are not persisted.
+- [x] Next.js retrieves evidence in verified studio scope, validates the service response, and persists complete assessments as immutable snapshots.
+- [x] Daily snapshots deduplicate by content fingerprint; significant same-day changes create event snapshots using tenant/date uniqueness constraints and atomic conflict handling.
+- [x] Limited and excluded assessments remain in the assessment response and do not create fabricated risk snapshots.
+- [x] Member history is tenant-scoped, chronological, and offset-paginated; the assessment response reports persistence outcome and snapshot ID.
+- [x] Significant score threshold is named and code-configurable at 10 points provisionally.
+- [x] Snapshot metadata migration preserves lifecycle state/events, assessment timestamp, full recommendation, status, and completeness reasons without weakening RLS or immutability.
 - [ ] Real Supabase Auth/browser flow and database-backed assessment request are executed end-to-end.
 - [ ] Coverage verification-through semantics are confirmed; the current adapter interprets `coverageVerifiedAt` as verified through its studio-local date.
-- [ ] Retention snapshots, deduplication/history, dashboard/attention queue, and production service network isolation remain unimplemented or unverified.
+- [ ] Prisma migrations are applied to the configured database and concurrent requests are verified against PostgreSQL.
+- [ ] Dashboard/attention queue and production service network isolation remain unimplemented or unverified.
 
 ## Verification Evidence
 

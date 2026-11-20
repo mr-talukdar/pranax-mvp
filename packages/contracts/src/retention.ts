@@ -118,9 +118,70 @@ export const retentionAssessmentOutputSchema = z.object({
   completeness_reasons: z.array(z.string()),
 });
 
+export const retentionSnapshotMetadataSchema = z.object({
+  assessed_at: timestampSchema,
+  status: retentionAssessmentStatusSchema,
+  lifecycle_state: retentionLifecycleStateSchema,
+  lifecycle_events: z.array(retentionLifecycleEventSchema),
+  recommendation: retentionRecommendationSchema,
+  completeness_reasons: z.array(z.string()),
+});
+
+export const retentionSnapshotPersistenceSchema = z.object({
+  outcome: z.enum([
+    'PERSISTED',
+    'EQUIVALENT_EXISTS',
+    'NO_SIGNIFICANT_CHANGE',
+    'NOT_ELIGIBLE',
+  ]),
+  snapshot_id: z.string().uuid().nullable(),
+});
+
+export const retentionAssessmentResponseSchema = z.object({
+  data: retentionAssessmentOutputSchema,
+  persistence: retentionSnapshotPersistenceSchema,
+});
+
+export const retentionHistoryItemSchema = z.object({
+  id: z.string().uuid(),
+  assessment_date: dateSchema,
+  assessed_at: timestampSchema.nullable(),
+  snapshot_type: z.enum(['DAILY', 'SIGNIFICANT_EVENT']),
+  score: z.number().int().min(0).max(100),
+  category: retentionRiskCategorySchema,
+  is_complete: z.boolean(),
+  status: retentionAssessmentStatusSchema.nullable(),
+  lifecycle_state: retentionLifecycleStateSchema.nullable(),
+  dimensions: z.record(z.string(), retentionDimensionSchema),
+  indicators: z.array(retentionIndicatorSchema),
+  recommendation: retentionRecommendationSchema.nullable(),
+  scoring_version: z.string(),
+});
+
+export const retentionHistoryResponseSchema = z.object({
+  items: z.array(retentionHistoryItemSchema),
+  pagination: z.object({
+    limit: z.number().int().positive(),
+    offset: z.number().int().nonnegative(),
+    has_more: z.boolean(),
+  }),
+});
+
 export type RetentionAssessmentInput = z.infer<
   typeof retentionAssessmentInputSchema
 >;
 export type RetentionAssessmentOutput = z.infer<
   typeof retentionAssessmentOutputSchema
+>;
+export type RetentionSnapshotMetadata = z.infer<
+  typeof retentionSnapshotMetadataSchema
+>;
+export type RetentionSnapshotPersistence = z.infer<
+  typeof retentionSnapshotPersistenceSchema
+>;
+export type RetentionAssessmentResponse = z.infer<
+  typeof retentionAssessmentResponseSchema
+>;
+export type RetentionHistoryResponse = z.infer<
+  typeof retentionHistoryResponseSchema
 >;

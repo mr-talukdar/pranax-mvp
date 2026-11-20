@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
+import { retentionAssessmentResponseSchema } from '@pranax/contracts';
 import { getStudioContext } from '../../../../../server/auth/context';
 import { IntelligenceServiceError } from '../../../../../server/services/intelligence';
-import { assessMemberRetention } from '../../../../../server/services/retention';
+import {
+  assessMemberRetention,
+  persistRetentionAssessment,
+} from '../../../../../server/services/retention';
 
 export async function GET(
   request: Request,
@@ -30,7 +34,13 @@ export async function GET(
     if (!assessment) {
       return NextResponse.json({ error: 'Member not found.' }, { status: 404 });
     }
-    return NextResponse.json({ data: assessment });
+    const persistence = await persistRetentionAssessment(context, assessment);
+    return NextResponse.json(
+      retentionAssessmentResponseSchema.parse({
+        data: assessment,
+        persistence,
+      }),
+    );
   } catch (error) {
     if (error instanceof IntelligenceServiceError) {
       return NextResponse.json(

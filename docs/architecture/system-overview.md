@@ -15,6 +15,12 @@ PranaX is planned as a multi-tenant SaaS platform for boutique fitness studios.
 
 Browser clients communicate with the Next.js web application. Server-only modules own the application authorization context and primary data access for the current foundation. The intelligence service receives explicitly authorized data or requests for analytics and AI operations. Synthetic artifacts flow through the database package seed loader before operational storage. External AI and provider integrations remain outside application data boundaries unless individually documented.
 
+## Architecture decisions
+
+- [Next.js application backend and database architecture](ADR-001-application-backend-and-database.md)
+- [Deterministic retention service boundary](../decisions/ADR-002-retention-service-boundary.md)
+- [Immutable retention snapshot history](../decisions/ADR-003-retention-snapshot-history.md)
+
 ## Deployment status
 
 The initial applications and service skeletons are scaffolded, but deployment configuration and Supabase credentials remain TBD.
