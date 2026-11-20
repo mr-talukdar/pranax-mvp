@@ -215,6 +215,9 @@ importers:
         specifier: 3.25.76
         version: 3.25.76
     devDependencies:
+      '@prisma/nextjs-monorepo-workaround-plugin':
+        specifier: 7.10.1
+        version: 7.10.1
       '@types/node':
         specifier: 24.3.0
         version: 24.3.0
@@ -937,6 +940,9 @@ packages:
 
   '@prisma/get-platform@6.17.1':
     resolution: {integrity: sha512-AKEn6fsfz0r482S5KRDFlIGEaq9wLNcgalD1adL+fPcFFblIKs1sD81kY/utrHdqKuVC6E1XSRpegDK3ZLL4Qg==}
+
+  '@prisma/nextjs-monorepo-workaround-plugin@7.10.1':
+    resolution: {integrity: sha512-eP5RCl8pA50EeBlE8bjxSrehm2mKrh1FH3IjFcM+hirDBPprMOukhWjpvYClfbBN+tIt+e1TeKOLvYbYAkMUJg==}
 
   '@rollup/rollup-android-arm-eabi@4.68.7':
     resolution: {integrity: sha512-ZL7MgOeMUiBum1bjzzyBotE3DuHVz+UUxcDVlLL7gpdhDM4RpjG4bZOIly7ensIcXw9jhWl7HTIIQ9KsgjykGQ==}
@@ -2687,6 +2693,8 @@ snapshots:
   '@prisma/get-platform@6.17.1':
     dependencies:
       '@prisma/debug': 6.17.1
+
+  '@prisma/nextjs-monorepo-workaround-plugin@7.10.1': {}
 
   '@rollup/rollup-android-arm-eabi@4.68.7':
     optional: true
