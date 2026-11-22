@@ -1,6 +1,6 @@
 # PranaX intelligence service
 
-This independent FastAPI service owns deterministic retention calculations. It accepts explicitly scoped evidence from the Next.js server boundary and does not access PostgreSQL, Supabase, or persistent storage.
+This independent FastAPI service owns deterministic retention calculations and a bounded conversational assistant. It accepts explicitly scoped evidence from the Next.js server boundary and does not access PostgreSQL, Supabase, or persistent storage.
 
 ## Local development
 
@@ -15,7 +15,19 @@ INTELLIGENCE_SERVICE_TOKEN='<shared-random-secret-of-at-least-32-characters>' \
   --app-dir services/intelligence/src --port 8000
 ```
 
-`GET /health` remains unauthenticated for service health checks. `POST /api/v1/retention/assess` requires `Authorization: Bearer <INTELLIGENCE_SERVICE_TOKEN>`. The same server-only value must be configured for the Next.js application. Generate it outside the repository, use at least 32 random bytes, and rotate it in both services together. Never put it in a browser bundle or logs.
+`GET /health` remains unauthenticated for service health checks. The `POST /api/v1/retention/assess`, `POST /api/v1/assistant/suggestions`, `POST /api/v1/assistant/route`, and `POST /api/v1/assistant/answer` endpoints require `Authorization: Bearer <INTELLIGENCE_SERVICE_TOKEN>`. The same server-only value must be configured for the Next.js application. Generate it outside the repository, use at least 32 random bytes, and rotate it in both services together. Never put it in a browser bundle or logs.
+
+## Conversational assistant
+
+The assistant is an analytics-only, read-only vertical slice. The Next.js server authenticates the user, establishes the studio context, and obtains the current dashboard summary inside `withVerifiedStudioContext`. It sends the intelligence service a small schema-validated aggregate snapshot; member names, contact details, member IDs, database credentials, and arbitrary client-provided studio IDs are not sent. The Python service has no database connection.
+
+The only approved operations are `attendance_summary`, `membership_summary`, `retention_summary`, and `studio_overview`. Next.js first sends the bounded question and recent conversation to `/route`, which applies a deterministic scope router without analytics data. Unsupported topics and individual-member, mutation, or advice requests are returned immediately. For an approved topic, Next.js then reads the dashboard under the verified studio context and calls `/answer` with only the approved operation and aggregate snapshot. Each operation reads only its matching fields. Gemini receives a server-owned canonical question and only the selected operation's evidence; raw user text and conversation history are not sent to the model. Answers must cite evidence IDs and may not introduce unsupported numbers. No SQL, model-selected database tool, or write operation exists.
+
+Suggested questions use Gemini to rank a fixed list of available analytics operations against the aggregate studio snapshot. The wording and operation IDs are server-owned. If `GEMINI_API_KEY` is missing or a Gemini response is unavailable or invalid, the service returns deterministic studio-specific suggestions or an evidence-formatted answer. In-scope analytics therefore remain usable without Gemini.
+
+Configure `GEMINI_API_KEY` as a secret in the intelligence service runtime (for example, Cloud Run) to enable Gemini-ranked suggestions and grounded answer wording. The key must not be sent to the browser. A key configured only in Vercel is not visible to this service; the existing Next.js retention explanation uses its own runtime value. Vercel needs the existing `INTELLIGENCE_URL` and `INTELLIGENCE_SERVICE_TOKEN` values for the server-to-server call.
+
+This MVP intentionally excludes individual-member lookups, payment/revenue data, class schedules, instructor information, record changes, and general fitness advice. Conversations are held in the current browser session only and are not persisted.
 
 The assessment response is deterministic for the same request, date, and `retention-v1.0.0` scoring version. It returns an explicit `is_complete` eligibility/coverage flag, evidence, and a single advisory recommendation; completeness is not model confidence. The endpoint does not make membership changes or persist snapshots.
 

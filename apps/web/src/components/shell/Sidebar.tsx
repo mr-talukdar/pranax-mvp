@@ -41,13 +41,10 @@ export function Sidebar({ session, onSignOut, onCloseMobile }: SidebarProps) {
     },
     {
       name: 'AI Assistant',
-      href: '#',
+      href: '/assistant',
       icon: 'auto_awesome',
       iconClass: 'text-tertiary',
-      badge: 'Coming Soon',
-      badgeClass:
-        'bg-surface-container-high text-on-surface-variant',
-      active: false,
+      active: pathname.startsWith('/assistant'),
     },
   ];
 
@@ -104,21 +101,13 @@ export function Sidebar({ session, onSignOut, onCloseMobile }: SidebarProps) {
                     </span>
                     <span className="whitespace-nowrap">{item.name}</span>
                   </div>
-                  {item.badge ? (
-                    <span
-                      className={`shrink-0 whitespace-nowrap rounded-full px-1.5 py-0.5 text-[9px] font-semibold leading-none tracking-tight ${item.badgeClass}`}
-                    >
-                      {item.badge}
-                    </span>
-                  ) : (
-                    <div
-                      className={`w-1.5 h-1.5 rounded-full bg-primary transition-opacity ${
-                        item.active
-                          ? 'opacity-100'
-                          : 'opacity-0 group-hover:opacity-100'
-                      }`}
-                    />
-                  )}
+                  <div
+                    className={`w-1.5 h-1.5 shrink-0 rounded-full bg-primary transition-opacity ${
+                      item.active
+                        ? 'opacity-100'
+                        : 'opacity-0 group-hover:opacity-100'
+                    }`}
+                  />
                 </Link>
               );
             })}

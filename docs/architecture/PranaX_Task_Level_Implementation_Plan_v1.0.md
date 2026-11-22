@@ -759,12 +759,12 @@ Acceptance criteria:
 ### CONV-01 — Define approved read-only operations
 
 Tasks:
-- [ ] List supported member queries.
-- [ ] List supported attendance queries.
-- [ ] List supported membership queries.
-- [ ] List supported retention queries.
-- [ ] Include ML queries only when validated.
-- [ ] Define input validation and tenant-scoping for every operation.
+- [x] List supported member queries (aggregate studio overview only; no individual-member lookup).
+- [x] List supported attendance queries (14-day attendance summary).
+- [x] List supported membership queries (aggregate membership status and upcoming expirations).
+- [x] List supported retention queries (aggregate risk categories and limited assessments).
+- [x] Include ML queries only when validated (none are exposed).
+- [x] Define input validation and tenant-scoping for every operation.
 
 Acceptance criteria:
 - Every model-callable operation is predefined and read-only.
@@ -773,13 +773,13 @@ Acceptance criteria:
 ### CONV-02 — Implement Gemini orchestration
 
 Tasks:
-- [ ] Authenticate the user before tool execution.
-- [ ] Establish tenant context server-side.
-- [ ] Pass a minimal request to Gemini.
-- [ ] Allow selection only from approved operations.
-- [ ] Execute operations server-side.
-- [ ] Return grounded results to Gemini for explanation.
-- [ ] Handle missing data and model errors.
+- [x] Authenticate the user before tool execution.
+- [x] Establish tenant context server-side.
+- [x] Pass a minimal request to Gemini.
+- [x] Allow selection only from approved operations.
+- [x] Execute operations server-side.
+- [x] Return grounded results to Gemini for explanation.
+- [x] Handle missing data and model errors.
 
 Acceptance criteria:
 - Gemini cannot access unrestricted database credentials.
@@ -788,11 +788,11 @@ Acceptance criteria:
 ### CONV-03 — Implement conversational UI
 
 Tasks:
-- [ ] Add a simple chat interface.
-- [ ] Support follow-up questions within the current session.
-- [ ] Show loading and error states.
-- [ ] Render useful tabular answers where appropriate.
-- [ ] Clearly indicate when information is unavailable.
+- [x] Add a simple chat interface.
+- [x] Support follow-up questions within the current session.
+- [x] Show loading and error states.
+- [x] Render grounded evidence alongside assistant answers.
+- [x] Clearly indicate when information is unavailable.
 
 Acceptance criteria:
 - Owner and manager can ask supported questions about their own studio.

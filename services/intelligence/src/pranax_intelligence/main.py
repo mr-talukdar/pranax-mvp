@@ -6,7 +6,21 @@ from fastapi import Depends, FastAPI, Header, HTTPException, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from .contracts import AssessmentInput, AssessmentOutput
+from .contracts import (
+    AssistantAnswerOutput,
+    AssistantOperationInput,
+    AssistantRouteInput,
+    AssistantRoutingOutput,
+    AssistantSuggestionsInput,
+    AssistantSuggestionsOutput,
+    AssessmentInput,
+    AssessmentOutput,
+)
+from .conversation import (
+    answer_studio_operation,
+    route_studio_question,
+    suggest_studio_questions,
+)
 from .engine import assess_retention
 
 app = FastAPI(title="PranaX Intelligence", version="0.1.0")
@@ -57,3 +71,32 @@ def health() -> dict[str, str]:
 )
 def retention_assessment(payload: AssessmentInput) -> AssessmentOutput:
     return assess_retention(payload)
+
+
+@app.post(
+    "/api/v1/assistant/suggestions",
+    response_model=AssistantSuggestionsOutput,
+    dependencies=[Depends(require_service_token)],
+)
+def assistant_suggestions(
+    payload: AssistantSuggestionsInput,
+) -> AssistantSuggestionsOutput:
+    return suggest_studio_questions(payload)
+
+
+@app.post(
+    "/api/v1/assistant/route",
+    response_model=AssistantRoutingOutput,
+    dependencies=[Depends(require_service_token)],
+)
+def assistant_route(payload: AssistantRouteInput) -> AssistantRoutingOutput:
+    return route_studio_question(payload)
+
+
+@app.post(
+    "/api/v1/assistant/answer",
+    response_model=AssistantAnswerOutput,
+    dependencies=[Depends(require_service_token)],
+)
+def assistant_answer(payload: AssistantOperationInput) -> AssistantAnswerOutput:
+    return answer_studio_operation(payload)

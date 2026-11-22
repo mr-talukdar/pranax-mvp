@@ -9,10 +9,20 @@ from typing import Annotated
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic.alias_generators import to_camel
 
 
 class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
+
+
+class AssistantModel(StrictModel):
+    model_config = ConfigDict(
+        extra="forbid",
+        frozen=True,
+        alias_generator=to_camel,
+        populate_by_name=True,
+    )
 
 
 class MembershipStatus(StrEnum):
@@ -235,4 +245,137 @@ class AssessmentOutput(StrictModel):
     indicators: tuple[Indicator, ...]
     recommendation: Recommendation
     completeness_reasons: tuple[str, ...]
+
+
+class AssistantOperation(StrEnum):
+    ATTENDANCE_SUMMARY = "attendance_summary"
+    MEMBERSHIP_SUMMARY = "membership_summary"
+    RETENTION_SUMMARY = "retention_summary"
+    STUDIO_OVERVIEW = "studio_overview"
+
+
+class AssistantMode(StrEnum):
+    GEMINI = "GEMINI"
+    DETERMINISTIC = "DETERMINISTIC"
+
+
+class AssistantScope(StrEnum):
+    IN_SCOPE = "IN_SCOPE"
+    OUT_OF_SCOPE = "OUT_OF_SCOPE"
+
+
+class AssistantHistoryMessage(AssistantModel):
+    role: str
+    content: str = Field(min_length=1, max_length=1200)
+
+    @field_validator("role")
+    @classmethod
+    def validate_role(cls, value: str) -> str:
+        if value not in {"user", "assistant"}:
+            raise ValueError("role must be user or assistant")
+        return value
+
+    @field_validator("content")
+    @classmethod
+    def trim_content(cls, value: str) -> str:
+        content = value.strip()
+        if not content:
+            raise ValueError("conversation content must not be blank")
+        return content
+
+
+class AssistantAttendanceTrend(AssistantModel):
+    date: date
+    count: int = Field(ge=0)
+
+
+class AssistantMembershipBreakdown(AssistantModel):
+    active: int = Field(ge=0)
+    paused: int = Field(ge=0)
+    expiring: int = Field(ge=0)
+    expired: int = Field(ge=0)
+
+
+class AssistantRetentionSummary(AssistantModel):
+    assessments_available: bool
+    low_count: int = Field(ge=0)
+    medium_count: int = Field(ge=0)
+    high_count: int = Field(ge=0)
+    limited_count: int = Field(ge=0)
+
+
+class AssistantAnalytics(AssistantModel):
+    as_of_date: date
+    total_members: int = Field(ge=0)
+    active_members: int = Field(ge=0)
+    new_registrations: int = Field(ge=0)
+    attendance_today: int = Field(ge=0)
+    expiring_in_7_days: int = Field(ge=0)
+    membership_breakdown: AssistantMembershipBreakdown
+    retention_summary: AssistantRetentionSummary
+    attendance_trends: tuple[AssistantAttendanceTrend, ...] = Field(max_length=14)
+
+    @model_validator(mode="after")
+    def validate_attendance_trends(self) -> AssistantAnalytics:
+        dates = [point.date for point in self.attendance_trends]
+        if dates != sorted(set(dates)):
+            raise ValueError("attendance trend dates must be unique and ascending")
+        if any(value > self.as_of_date for value in dates):
+            raise ValueError("attendance trends cannot extend beyond as_of_date")
+        return self
+
+
+class AssistantSuggestionsInput(AssistantModel):
+    studio_id: str = Field(min_length=1, max_length=100)
+    analytics: AssistantAnalytics
+
+
+class AssistantSuggestion(AssistantModel):
+    operation: AssistantOperation
+    question: str = Field(min_length=1, max_length=180)
+
+
+class AssistantSuggestionsOutput(AssistantModel):
+    suggestions: tuple[AssistantSuggestion, ...] = Field(max_length=3)
+    mode: AssistantMode
+
+
+class AssistantRouteInput(AssistantModel):
+    studio_id: str = Field(min_length=1, max_length=100)
+    question: str = Field(min_length=1, max_length=500)
+    history: tuple[AssistantHistoryMessage, ...] = Field(default=(), max_length=8)
+
+    @field_validator("question")
+    @classmethod
+    def trim_question(cls, value: str) -> str:
+        question = value.strip()
+        if not question:
+            raise ValueError("question must not be blank")
+        return question
+
+
+class AssistantOperationInput(AssistantModel):
+    studio_id: str = Field(min_length=1, max_length=100)
+    analytics: AssistantAnalytics
+    operation: AssistantOperation
+
+
+class AssistantRoutingOutput(AssistantModel):
+    scope: AssistantScope
+    operation: AssistantOperation | None
+    message: str = Field(min_length=1, max_length=500)
+
+
+class AssistantEvidence(AssistantModel):
+    id: str = Field(min_length=1, max_length=60)
+    label: str = Field(min_length=1, max_length=120)
+    value: str = Field(min_length=1, max_length=180)
+
+
+class AssistantAnswerOutput(AssistantModel):
+    scope: AssistantScope
+    operation: AssistantOperation | None
+    answer: str = Field(min_length=1, max_length=1200)
+    evidence: tuple[AssistantEvidence, ...] = Field(max_length=6)
+    mode: AssistantMode
 

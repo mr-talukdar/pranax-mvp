@@ -10,7 +10,7 @@ Next.js Route Handlers and server-only modules own primary studio business workf
 
 ## Intelligence service
 
-Owns analytics and model pipelines, retention scoring, and AI-assisted insight generation. It must not own primary studio CRUD or bypass API authorization. Cross-service payloads and tenant scope require explicit contracts.
+Owns analytics and model pipelines, retention scoring, and bounded AI-assisted insight generation. For conversational analytics, it receives only an explicitly validated aggregate snapshot from Next.js, exposes a fixed read-only operation set, and has no database credentials or persistence. It must not own primary studio CRUD or bypass API authorization. Cross-service payloads and tenant scope require explicit contracts.
 
 ## Shared contracts
 
