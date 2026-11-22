@@ -2,9 +2,34 @@ import type { ReactNode } from 'react';
 import './styles.css';
 import { AppSessionProvider } from '../components/shell/AppSessionProvider';
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+
 export const metadata = {
-  title: 'PranaX — Fitness Business OS',
-  description: 'Multi-tenant SaaS platform for boutique fitness studios',
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: 'PranaX | Studio Management Software for Pilates & Yoga',
+    template: '%s | PranaX',
+  },
+  description:
+    'Manage studio members, attendance, memberships, and retention signals in one workspace built for Pilates, yoga, and boutique fitness teams.',
+  applicationName: 'PranaX',
+  openGraph: {
+    type: 'website',
+    siteName: 'PranaX',
+    title: 'PranaX | Studio Management Software for Pilates & Yoga',
+    description:
+      'A practical workspace for boutique fitness studios to manage members, attendance, memberships, and retention signals.',
+  },
+  twitter: {
+    card: 'summary',
+    title: 'PranaX | Studio Management Software for Pilates & Yoga',
+    description:
+      'A practical workspace for boutique fitness studios to manage members, attendance, memberships, and retention signals.',
+  },
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function RootLayout({

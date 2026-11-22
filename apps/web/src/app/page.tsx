@@ -2,9 +2,16 @@ import Link from 'next/link';
 import { BrandLogo } from '../components/brand/BrandLogo';
 
 export const metadata = {
-  title: 'PranaX — Studio operations and retention clarity',
+  title: 'Studio Management Software for Pilates & Yoga Studios',
   description:
-    'Member operations, attendance, memberships, and explainable retention signals for boutique fitness studios.',
+    'Run your Pilates, yoga, or boutique fitness studio with one workspace for member management, attendance tracking, memberships, and explainable retention signals.',
+  alternates: { canonical: '/' },
+  openGraph: {
+    title: 'Studio Management Software for Pilates & Yoga Studios | PranaX',
+    description:
+      'Manage members, attendance, memberships, and retention signals in one practical workspace for boutique fitness studios.',
+    url: '/',
+  },
 };
 
 const capabilities = [
