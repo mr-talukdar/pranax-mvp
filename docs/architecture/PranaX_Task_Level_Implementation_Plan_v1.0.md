@@ -142,15 +142,15 @@ CSV import, Gemini and ML are parallel or optional workstreams after the critica
 **Owner:** Rahul
 
 Tasks:
-- [ ] Pull the latest main branch.
-- [ ] Verify the pnpm workspace and package scripts.
-- [ ] Verify environment variables are documented.
-- [ ] Verify Next.js starts locally.
-- [ ] Verify Supabase connection.
-- [ ] Verify Prisma can connect and inspect the current schema.
-- [ ] Verify Python virtual environment and installed dependencies.
-- [ ] Verify FastAPI starts locally if the service already exists.
-- [ ] Confirm Git branches and integration workflow.
+- [x] Pull the latest main branch.
+- [x] Verify the pnpm workspace and package scripts.
+- [x] Verify environment variables are documented.
+- [x] Verify Next.js starts locally.
+- [x] Verify Supabase connection.
+- [x] Verify Prisma can connect and inspect the current schema.
+- [x] Verify Python virtual environment and installed dependencies.
+- [x] Verify FastAPI starts locally if the service already exists.
+- [x] Confirm Git branches and integration workflow.
 
 Acceptance criteria:
 - The frontend starts successfully.
@@ -164,13 +164,13 @@ Acceptance criteria:
 **Support:** Akash
 
 Tasks:
-- [ ] Agree on member and membership terminology.
-- [ ] Agree on the minimum member fields required by the UI.
-- [ ] Agree on attendance input and output shapes.
-- [ ] Agree on the retention assessment response shape.
-- [ ] Agree on dashboard aggregate requirements.
-- [ ] Document API routes or server actions before parallel implementation.
-- [ ] Confirm how the authenticated studio/tenant context is resolved.
+- [x] Agree on member and membership terminology.
+- [x] Agree on the minimum member fields required by the UI.
+- [x] Agree on attendance input and output shapes.
+- [x] Agree on the retention assessment response shape.
+- [x] Agree on dashboard aggregate requirements.
+- [x] Document API routes or server actions before parallel implementation.
+- [x] Confirm how the authenticated studio/tenant context is resolved.
 
 Acceptance criteria:
 - Frontend and backend can work independently against agreed contracts.
@@ -182,11 +182,11 @@ Acceptance criteria:
 **Support:** Akash, Rahul
 
 Tasks:
-- [ ] Define the studio persona and demo scenario.
-- [ ] Define the member journey to be demonstrated.
-- [ ] Identify which data is preloaded and which data is created live.
-- [ ] Agree on the final demo sequence.
-- [ ] Ensure all demo figures are internally consistent.
+- [x] Define the studio persona and demo scenario.
+- [x] Define the member journey to be demonstrated.
+- [x] Identify which data is preloaded and which data is created live.
+- [x] Agree on the final demo sequence.
+- [x] Ensure all demo figures are internally consistent.
 
 Acceptance criteria:
 - The team can explain the product in one sentence.
@@ -204,11 +204,11 @@ Acceptance criteria:
 ### FND-01 — Establish studio context
 
 Tasks:
-- [ ] Confirm how a signed-in user is associated with a studio.
-- [ ] Establish a single server-side method for retrieving the authenticated studio ID.
-- [ ] Do not trust a tenant ID supplied directly by the browser.
-- [ ] Ensure all member, membership and attendance queries use the authenticated studio context.
-- [ ] Add a development/demo tenant path only if real authentication setup is not ready.
+- [x] Confirm how a signed-in user is associated with a studio.
+- [x] Establish a single server-side method for retrieving the authenticated studio ID.
+- [x] Do not trust a tenant ID supplied directly by the browser.
+- [x] Ensure all member, membership and attendance queries use the authenticated studio context.
+- [x] Add a development/demo tenant path only if real authentication setup is not ready.
 
 Acceptance criteria:
 - Requests cannot select another studio by changing a client-supplied identifier.
@@ -217,11 +217,11 @@ Acceptance criteria:
 ### FND-02 — Verify database access controls
 
 Tasks:
-- [ ] Review Supabase Row Level Security policies.
-- [ ] Confirm browser clients cannot access other tenants' records.
-- [ ] Keep service-role credentials server-side only.
-- [ ] Confirm Python service access is authenticated and tenant-scoped.
-- [ ] Add a basic cross-tenant access test.
+- [x] Review Supabase Row Level Security policies.
+- [x] Confirm browser clients cannot access other tenants' records.
+- [x] Keep service-role credentials server-side only.
+- [x] Confirm Python service access is authenticated and tenant-scoped.
+- [x] Add a basic cross-tenant access test.
 
 Acceptance criteria:
 - A user from Studio A cannot read or mutate Studio B data.
@@ -230,12 +230,12 @@ Acceptance criteria:
 ### FND-03 — Establish shared application conventions
 
 Tasks:
-- [ ] Confirm API error response format.
-- [ ] Confirm validation conventions.
-- [ ] Confirm loading, empty and error UI states.
-- [ ] Confirm date/time handling and studio timezone source.
-- [ ] Confirm logging conventions.
-- [ ] Confirm formatting and lint commands.
+- [x] Confirm API error response format.
+- [x] Confirm validation conventions.
+- [x] Confirm loading, empty and error UI states.
+- [x] Confirm date/time handling and studio timezone source.
+- [x] Confirm logging conventions.
+- [x] Confirm formatting and lint commands.
 
 Acceptance criteria:
 - The team uses consistent response and error handling.
@@ -254,12 +254,12 @@ Acceptance criteria:
 ### MEM-01 — Implement member registration
 
 Tasks:
-- [ ] Implement the member creation operation.
-- [ ] Validate required member fields.
-- [ ] Associate the member with the authenticated studio.
-- [ ] Prevent accidental cross-tenant association.
-- [ ] Return the created member in the agreed response shape.
-- [ ] Add success and validation error handling in the UI.
+- [x] Implement the member creation operation.
+- [x] Validate required member fields.
+- [x] Associate the member with the authenticated studio.
+- [x] Prevent accidental cross-tenant association.
+- [x] Return the created member in the agreed response shape.
+- [x] Add success and validation error handling in the UI.
 
 Acceptance criteria:
 - An owner or manager can register a member.
@@ -269,12 +269,12 @@ Acceptance criteria:
 ### MEM-02 — Implement member directory
 
 Tasks:
-- [ ] Fetch studio-scoped members.
-- [ ] Display member name and relevant contact information.
-- [ ] Add search.
-- [ ] Add membership-status filtering where supported by current data.
-- [ ] Add loading, empty and error states.
-- [ ] Link each row to its member profile.
+- [x] Fetch studio-scoped members.
+- [x] Display member name and relevant contact information.
+- [x] Add search.
+- [x] Add membership-status filtering where supported by current data.
+- [x] Add loading, empty and error states.
+- [x] Link each row to its member profile.
 
 Acceptance criteria:
 - The directory displays only the authenticated studio's members.
@@ -283,12 +283,12 @@ Acceptance criteria:
 ### MEM-03 — Implement member profile and editing
 
 Tasks:
-- [ ] Fetch a member by ID within the authenticated studio.
-- [ ] Display member details.
-- [ ] Implement profile editing.
-- [ ] Display current membership information.
-- [ ] Provide a place for membership and attendance history.
-- [ ] Handle missing or inaccessible member IDs safely.
+- [x] Fetch a member by ID within the authenticated studio.
+- [x] Display member details.
+- [x] Implement profile editing.
+- [x] Display current membership information.
+- [x] Provide a place for membership and attendance history.
+- [x] Handle missing or inaccessible member IDs safely.
 
 Acceptance criteria:
 - An owner or manager can inspect and edit a member.
@@ -297,12 +297,12 @@ Acceptance criteria:
 ### MEM-04 — Implement predefined membership plans
 
 Tasks:
-- [ ] Provide Monthly (30 days), Quarterly (90 days) and Annual (365 days) plan options.
-- [ ] Assign a selected plan to a member.
-- [ ] Create a distinct membership period.
-- [ ] Calculate start and expiry dates consistently.
-- [ ] Preserve the previous membership period on renewal.
-- [ ] Prevent more than one active membership period per member.
+- [x] Provide Monthly (30 days), Quarterly (90 days) and Annual (365 days) plan options.
+- [x] Assign a selected plan to a member.
+- [x] Create a distinct membership period.
+- [x] Calculate start and expiry dates consistently.
+- [x] Preserve the previous membership period on renewal.
+- [x] Prevent more than one active membership period per member.
 
 Acceptance criteria:
 - A member can be assigned a predefined plan.
@@ -312,13 +312,13 @@ Acceptance criteria:
 ### MEM-05 — Implement essential lifecycle actions
 
 Tasks:
-- [ ] Implement renewal.
-- [ ] Implement pause and resume.
-- [ ] Implement cancellation with an effective date.
-- [ ] Implement reactivation as a new membership period.
-- [ ] Preserve historical periods and lifecycle events.
-- [ ] Ensure pause duration extends membership expiry.
-- [ ] Validate that only one active period exists.
+- [x] Implement renewal.
+- [x] Implement pause and resume.
+- [x] Implement cancellation with an effective date.
+- [x] Implement reactivation as a new membership period.
+- [x] Preserve historical periods and lifecycle events.
+- [x] Ensure pause duration extends membership expiry.
+- [x] Validate that only one active period exists.
 
 Acceptance criteria:
 - The core lifecycle actions work without destroying history.
@@ -340,13 +340,13 @@ Acceptance criteria:
 ### ATT-01 — Implement manual check-in
 
 Tasks:
-- [ ] Search for a member in the current studio.
-- [ ] Record a check-in timestamp.
-- [ ] Derive the studio-local attendance date.
-- [ ] Enforce one attendance record per member per local calendar day.
-- [ ] Show a warning for paused, expired or cancelled members.
-- [ ] Allow check-in despite the warning.
-- [ ] Handle duplicate check-in gracefully.
+- [x] Search for a member in the current studio.
+- [x] Record a check-in timestamp.
+- [x] Derive the studio-local attendance date.
+- [x] Enforce one attendance record per member per local calendar day.
+- [x] Show a warning for paused, expired or cancelled members.
+- [x] Allow check-in despite the warning.
+- [x] Handle duplicate check-in gracefully.
 
 Acceptance criteria:
 - A valid member can be checked in.
@@ -357,11 +357,11 @@ Acceptance criteria:
 ### ATT-02 — Implement attendance history
 
 Tasks:
-- [ ] Display studio attendance history.
-- [ ] Display member-specific attendance history.
-- [ ] Add date filtering if time permits.
-- [ ] Preserve attendance when membership status changes.
-- [ ] Evaluate membership status at the attendance timestamp where required.
+- [x] Display studio attendance history.
+- [x] Display member-specific attendance history.
+- [x] Add date filtering if time permits.
+- [x] Preserve attendance when membership status changes.
+- [x] Evaluate membership status at the attendance timestamp where required.
 
 Acceptance criteria:
 - Attendance history is visible and tenant-scoped.
@@ -372,16 +372,16 @@ Acceptance criteria:
 **Priority:** P1
 
 Tasks:
-- [ ] Provide a downloadable or visible fixed CSV template.
-- [ ] Accept member ID, email or phone as identifiers.
-- [ ] Require an attendance timestamp.
-- [ ] Preview uploaded rows before import.
-- [ ] Resolve all provided identifiers and reject conflicts.
-- [ ] Reject ambiguous and unknown members.
-- [ ] Reject malformed timestamps.
-- [ ] Detect duplicates using studio-local date.
-- [ ] Import valid rows while reporting invalid rows.
-- [ ] Store import summary/history if time permits.
+- [x] Provide a downloadable or visible fixed CSV template.
+- [x] Accept member ID, email or phone as identifiers.
+- [x] Require an attendance timestamp.
+- [x] Preview uploaded rows before import.
+- [x] Resolve all provided identifiers and reject conflicts.
+- [x] Reject ambiguous and unknown members.
+- [x] Reject malformed timestamps.
+- [x] Detect duplicates using studio-local date.
+- [x] Import valid rows while reporting invalid rows.
+- [x] Store import summary/history if time permits.
 
 Acceptance criteria:
 - Valid rows import successfully.
@@ -392,14 +392,14 @@ Acceptance criteria:
 ### ATT-04 — Implement engagement indicators
 
 Tasks:
-- [ ] Calculate last visit.
-- [ ] Calculate attendance days in the previous 7 days.
-- [ ] Calculate attendance days in the previous 30 days.
-- [ ] Calculate total attendance days in the available history.
-- [ ] Calculate days since last visit.
-- [ ] Calculate weekly attendance frequency.
-- [ ] Calculate attendance change between consecutive 30-day periods.
-- [ ] Keep missing coverage distinguishable from zero attendance.
+- [x] Calculate last visit.
+- [x] Calculate attendance days in the previous 7 days.
+- [x] Calculate attendance days in the previous 30 days.
+- [x] Calculate total attendance days in the available history.
+- [x] Calculate days since last visit.
+- [x] Calculate weekly attendance frequency.
+- [x] Calculate attendance change between consecutive 30-day periods.
+- [x] Keep missing coverage distinguishable from zero attendance.
 
 Acceptance criteria:
 - Indicators are calculated from attendance records, not duplicated manually in the UI.
@@ -421,13 +421,13 @@ Acceptance criteria:
 ### RET-01 — Establish assessment eligibility
 
 Tasks:
-- [ ] Determine the reliable attendance coverage window.
-- [ ] Verify at least 60 days of reliable attendance coverage.
-- [ ] Verify membership history is known.
-- [ ] Exclude paused memberships from active assessment.
-- [ ] Exclude members without an active membership from the active risk population.
-- [ ] Distinguish complete zero-attendance coverage from missing data.
-- [ ] Return a limited assessment when requirements are not met.
+- [x] Determine the reliable attendance coverage window.
+- [x] Verify at least 60 days of reliable attendance coverage.
+- [x] Verify membership history is known.
+- [x] Exclude paused memberships from active assessment.
+- [x] Exclude members without an active membership from the active risk population.
+- [x] Distinguish complete zero-attendance coverage from missing data.
+- [x] Return a limited assessment when requirements are not met.
 
 Acceptance criteria:
 - Ineligible members do not receive a misleading full risk score.
@@ -438,13 +438,13 @@ Acceptance criteria:
 ### RET-02 — Implement attendance recency scoring
 
 Tasks:
-- [ ] Calculate days since last visit.
-- [ ] Apply base scores: 0–14 days = 0; 15–29 = 30; 30–44 = 65; 45+ = 100.
-- [ ] Establish personal baseline only when evidence is sufficient.
-- [ ] Classify baseline reliability as reliable, weak or unavailable.
-- [ ] Allow a reliable personal baseline to increase risk earlier.
-- [ ] Never allow the personal baseline to reduce risk below the absolute inactivity score.
-- [ ] Use absolute thresholds when baseline is unavailable.
+- [x] Calculate days since last visit.
+- [x] Apply base scores: 0–14 days = 0; 15–29 = 30; 30–44 = 65; 45+ = 100.
+- [x] Establish personal baseline only when evidence is sufficient.
+- [x] Classify baseline reliability as reliable, weak or unavailable.
+- [x] Allow a reliable personal baseline to increase risk earlier.
+- [x] Never allow the personal baseline to reduce risk below the absolute inactivity score.
+- [x] Use absolute thresholds when baseline is unavailable.
 
 Acceptance criteria:
 - Boundary dates are tested.
@@ -454,14 +454,14 @@ Acceptance criteria:
 ### RET-03 — Implement attendance trend scoring
 
 Tasks:
-- [ ] Calculate attendance days in the previous 30-day period.
-- [ ] Calculate attendance days in the recent 30-day period.
-- [ ] Calculate percentage decline when the previous period is greater than zero.
-- [ ] Map decline to the agreed subscores: 0, 20, 45, 70 or 100.
-- [ ] Handle previous-period zero without division errors.
-- [ ] Implement consistency deterioration only when sufficient history exists.
-- [ ] Mark unavailable components explicitly.
-- [ ] Redistribute the internal 60/40 component weight when one component is unavailable.
+- [x] Calculate attendance days in the previous 30-day period.
+- [x] Calculate attendance days in the recent 30-day period.
+- [x] Calculate percentage decline when the previous period is greater than zero.
+- [x] Map decline to the agreed subscores: 0, 20, 45, 70 or 100.
+- [x] Handle previous-period zero without division errors.
+- [x] Implement consistency deterioration only when sufficient history exists.
+- [x] Mark unavailable components explicitly.
+- [x] Redistribute the internal 60/40 component weight when one component is unavailable.
 
 Acceptance criteria:
 - Trend calculations use the correct non-overlapping 30-day windows.
@@ -471,13 +471,13 @@ Acceptance criteria:
 ### RET-04 — Implement membership lifecycle scoring
 
 Tasks:
-- [ ] Calculate days until effective membership expiry.
-- [ ] Apply agreed scores: more than 30 days = 0; 15–30 = 25; 8–14 = 50; 0–7 = 100.
-- [ ] Remove expiry-related risk when a renewal is confirmed.
-- [ ] Keep attendance risk independent.
-- [ ] Exclude paused memberships from active assessment.
-- [ ] Apply the 14-day grace period to expiry lifecycle classification.
-- [ ] Handle future-effective cancellations correctly.
+- [x] Calculate days until effective membership expiry.
+- [x] Apply agreed scores: more than 30 days = 0; 15–30 = 25; 8–14 = 50; 0–7 = 100.
+- [x] Remove expiry-related risk when a renewal is confirmed.
+- [x] Keep attendance risk independent.
+- [x] Exclude paused memberships from active assessment.
+- [x] Apply the 14-day grace period to expiry lifecycle classification.
+- [x] Handle future-effective cancellations correctly.
 
 Acceptance criteria:
 - Expiry boundary conditions are tested.
@@ -488,13 +488,13 @@ Acceptance criteria:
 ### RET-05 — Implement historical renewal scoring
 
 Tasks:
-- [ ] Retrieve completed renewal opportunities in the rolling 12-month window.
-- [ ] Exclude opportunities still within the grace period.
-- [ ] Count successful renewals and completed non-renewals.
-- [ ] Require at least two completed opportunities.
-- [ ] Mark the dimension unavailable below the evidence threshold.
-- [ ] Keep immediate cancellations separate from failed renewal opportunities.
-- [ ] Calculate non-renewal percentage when eligible.
+- [x] Retrieve completed renewal opportunities in the rolling 12-month window.
+- [x] Exclude opportunities still within the grace period.
+- [x] Count successful renewals and completed non-renewals.
+- [x] Require at least two completed opportunities.
+- [x] Mark the dimension unavailable below the evidence threshold.
+- [x] Keep immediate cancellations separate from failed renewal opportunities.
+- [x] Calculate non-renewal percentage when eligible.
 
 Acceptance criteria:
 - Renewal history below the evidence threshold is unavailable, not zero.
@@ -504,13 +504,13 @@ Acceptance criteria:
 ### RET-06 — Implement weighted risk calculation
 
 Tasks:
-- [ ] Implement the four dimension weights: 25%, 35%, 25%, 15%.
-- [ ] Calculate the weighted score using available dimensions only.
-- [ ] Redistribute unavailable dimension weights proportionally.
-- [ ] Keep dimension scores and contributing evidence in the result.
-- [ ] Apply Low 0–29, Medium 30–59 and High 60–100 categories.
-- [ ] Version the scoring rules.
-- [ ] Ensure the output is explicitly a prioritisation score, not churn probability.
+- [x] Implement the four dimension weights: 25%, 35%, 25%, 15%.
+- [x] Calculate the weighted score using available dimensions only.
+- [x] Redistribute unavailable dimension weights proportionally.
+- [x] Keep dimension scores and contributing evidence in the result.
+- [x] Apply Low 0–29, Medium 30–59 and High 60–100 categories.
+- [x] Version the scoring rules.
+- [x] Ensure the output is explicitly a prioritisation score, not churn probability.
 
 Acceptance criteria:
 - Unit tests cover all dimensions available.
@@ -521,13 +521,13 @@ Acceptance criteria:
 ### RET-07 — Implement deterministic recommendations
 
 Tasks:
-- [ ] Low risk returns no intervention recommendation.
-- [ ] Medium risk returns one preventive recommendation.
-- [ ] High risk returns one priority recommendation.
-- [ ] Evaluate all applicable triggers.
-- [ ] Select one highest-priority applicable recommendation.
-- [ ] Attach the evidence and reason.
-- [ ] Do not execute any external intervention.
+- [x] Low risk returns no intervention recommendation.
+- [x] Medium risk returns one preventive recommendation.
+- [x] High risk returns one priority recommendation.
+- [x] Evaluate all applicable triggers.
+- [x] Select one highest-priority applicable recommendation.
+- [x] Attach the evidence and reason.
+- [x] Do not execute any external intervention.
 
 Acceptance criteria:
 - Never return multiple primary recommendations.
@@ -537,15 +537,15 @@ Acceptance criteria:
 ### RET-08 — Implement assessment refresh and history
 
 Tasks:
-- [ ] Recalculate the affected member after attendance events.
-- [ ] Recalculate after membership lifecycle events.
-- [ ] Add a daily scheduled assessment run.
-- [ ] Make event processing idempotent.
-- [ ] Store one daily snapshot per eligible member.
-- [ ] Store additional snapshots for significant changes.
-- [ ] Avoid duplicate snapshots for identical calculations.
-- [ ] Preserve dimension scores, evidence, recommendation, completeness, model version and timestamp.
-- [ ] Support 30-, 60- and 90-day risk progression queries.
+- [x] Recalculate the affected member after attendance events.
+- [x] Recalculate after membership lifecycle events.
+- [x] Add a daily scheduled assessment run.
+- [x] Make event processing idempotent.
+- [x] Store one daily snapshot per eligible member.
+- [x] Store additional snapshots for significant changes.
+- [x] Avoid duplicate snapshots for identical calculations.
+- [x] Preserve dimension scores, evidence, recommendation, completeness, model version and timestamp.
+- [x] Support 30-, 60- and 90-day risk progression queries.
 
 Acceptance criteria:
 - Reprocessing an event does not corrupt or duplicate assessment history.
@@ -557,14 +557,14 @@ Acceptance criteria:
 **Frontend owner:** Akash
 
 Tasks:
-- [ ] Display current risk score and category.
-- [ ] Display top contributing factors.
-- [ ] Display one recommendation where applicable.
-- [ ] Display assessment completeness and coverage.
-- [ ] Display last assessment timestamp.
-- [ ] Display 30-, 60- and 90-day risk progression where data exists.
-- [ ] Add a studio-level list of Medium and High risk members.
-- [ ] Add useful empty and limited-assessment states.
+- [x] Display current risk score and category.
+- [x] Display top contributing factors.
+- [x] Display one recommendation where applicable.
+- [x] Display assessment completeness and coverage.
+- [x] Display last assessment timestamp.
+- [x] Display 30-, 60- and 90-day risk progression where data exists.
+- [x] Add a studio-level list of Medium and High risk members.
+- [x] Add useful empty and limited-assessment states.
 
 Acceptance criteria:
 - The owner can understand why a member is flagged without reading the scoring implementation.
@@ -573,12 +573,12 @@ Acceptance criteria:
 ### RET-10 — Add Gemini explanation (optional)
 
 Tasks:
-- [ ] Define a structured evidence payload.
-- [ ] Send only the minimum necessary information.
-- [ ] Ask Gemini to explain the supplied evidence.
-- [ ] Prevent the model from changing scores or categories.
-- [ ] Handle unavailable or malformed model responses.
-- [ ] Retain deterministic explanation as fallback.
+- [x] Define a structured evidence payload.
+- [x] Send only the minimum necessary information.
+- [x] Ask Gemini to explain the supplied evidence.
+- [x] Prevent the model from changing scores or categories.
+- [x] Handle unavailable or malformed model responses.
+- [x] Retain deterministic explanation as fallback.
 
 Acceptance criteria:
 - Gemini cannot alter authoritative retention results.
@@ -599,11 +599,11 @@ Acceptance criteria:
 ### DASH-01 — Implement studio overview
 
 Tasks:
-- [ ] Display active member count.
-- [ ] Display new registrations for a defined period.
-- [ ] Display attendance today.
-- [ ] Ensure all metrics use the authenticated studio context.
-- [ ] Define the period and timezone used by each metric.
+- [x] Display active member count.
+- [x] Display new registrations for a defined period.
+- [x] Display attendance today.
+- [x] Ensure all metrics use the authenticated studio context.
+- [x] Define the period and timezone used by each metric.
 
 Acceptance criteria:
 - Values are derived from actual database records.
@@ -612,11 +612,11 @@ Acceptance criteria:
 ### DASH-02 — Implement membership overview
 
 Tasks:
-- [ ] Display active memberships.
-- [ ] Display paused memberships.
-- [ ] Display expiring memberships.
-- [ ] Display expired memberships.
-- [ ] Define the expiring window consistently, using the dashboard's agreed next-seven-days view.
+- [x] Display active memberships.
+- [x] Display paused memberships.
+- [x] Display expiring memberships.
+- [x] Display expired memberships.
+- [x] Define the expiring window consistently, using the dashboard's agreed next-seven-days view.
 
 Acceptance criteria:
 - Counts agree with member and membership records.
@@ -625,11 +625,11 @@ Acceptance criteria:
 ### DASH-03 — Implement attendance trends
 
 Tasks:
-- [ ] Display daily attendance.
-- [ ] Display monthly attendance.
-- [ ] Use attendance days, not class-session counts.
-- [ ] Use studio-local dates.
-- [ ] Handle periods with no records.
+- [x] Display daily attendance.
+- [x] Display monthly attendance.
+- [x] Use attendance days, not class-session counts.
+- [x] Use studio-local dates.
+- [x] Handle periods with no records.
 
 Acceptance criteria:
 - Dashboard attendance matches attendance history for the same period.
@@ -637,10 +637,10 @@ Acceptance criteria:
 ### DASH-04 — Implement retention overview
 
 Tasks:
-- [ ] Count Low, Medium and High risk members.
-- [ ] Exclude limited assessments from full-score category counts.
-- [ ] Display the number of limited assessments separately if useful.
-- [ ] Ensure counts use the latest valid assessment per eligible member.
+- [x] Count Low, Medium and High risk members.
+- [x] Exclude limited assessments from full-score category counts.
+- [x] Display the number of limited assessments separately if useful.
+- [x] Ensure counts use the latest valid assessment per eligible member.
 
 Acceptance criteria:
 - Dashboard risk distribution matches the retention assessment data.
@@ -648,12 +648,12 @@ Acceptance criteria:
 ### DASH-05 — Implement attention queue
 
 Tasks:
-- [ ] List members with Medium and High risk.
-- [ ] Display score and category.
-- [ ] Display main contributing indicator.
-- [ ] Display the single recommended action.
-- [ ] Link to the member retention profile.
-- [ ] Sort by risk and recommendation priority.
+- [x] List members with Medium and High risk.
+- [x] Display score and category.
+- [x] Display main contributing indicator.
+- [x] Display the single recommended action.
+- [x] Link to the member retention profile.
+- [x] Sort by risk and recommendation priority.
 
 Acceptance criteria:
 - The owner can move from dashboard to the relevant member record.
@@ -662,9 +662,9 @@ Acceptance criteria:
 ### DASH-06 — Add ML display slot (feature-flagged)
 
 Tasks:
-- [ ] Reserve a dashboard location for validated ML predictions.
-- [ ] Hide the section when no validated model is active.
-- [ ] Never label experimental synthetic-data results as production predictions.
+- [x] Reserve a dashboard location for validated ML predictions.
+- [x] Hide the section when no validated model is active.
+- [x] Never label experimental synthetic-data results as production predictions.
 
 Acceptance criteria:
 - Dashboard works normally when ML is unavailable or disabled.
@@ -813,14 +813,14 @@ Acceptance criteria:
 ### INT-01 — Complete the end-to-end workflow
 
 Tasks:
-- [ ] Register a member.
-- [ ] Assign a membership.
-- [ ] Record or import attendance.
-- [ ] Verify engagement indicators.
-- [ ] Generate a retention assessment.
-- [ ] Verify the risk category and evidence.
-- [ ] Verify the recommendation.
-- [ ] Confirm the dashboard reflects the same member and assessment.
+- [x] Register a member.
+- [x] Assign a membership.
+- [x] Record or import attendance.
+- [x] Verify engagement indicators.
+- [x] Generate a retention assessment.
+- [x] Verify the risk category and evidence.
+- [x] Verify the recommendation.
+- [x] Confirm the dashboard reflects the same member and assessment.
 
 Acceptance criteria:
 - The complete workflow succeeds without manually editing database records during the demo.
@@ -828,12 +828,12 @@ Acceptance criteria:
 ### INT-02 — Tenant isolation smoke test
 
 Tasks:
-- [ ] Create or use two test studios.
-- [ ] Create members in both studios.
-- [ ] Attempt cross-tenant member lookup.
-- [ ] Attempt cross-tenant attendance lookup.
-- [ ] Attempt cross-tenant dashboard aggregation.
-- [ ] Attempt cross-tenant retention lookup.
+- [x] Create or use two test studios.
+- [x] Create members in both studios.
+- [x] Attempt cross-tenant member lookup.
+- [x] Attempt cross-tenant attendance lookup.
+- [x] Attempt cross-tenant dashboard aggregation.
+- [x] Attempt cross-tenant retention lookup.
 
 Acceptance criteria:
 - Every cross-tenant access attempt is denied or returns no accessible record.
@@ -841,17 +841,17 @@ Acceptance criteria:
 ### INT-03 — Business-rule regression tests
 
 Tasks:
-- [ ] Duplicate same-day attendance.
-- [ ] Inactive-member check-in warning.
-- [ ] Membership pause and expiry extension.
-- [ ] Renewal preserving previous period.
-- [ ] Grace-period classification.
-- [ ] Future-effective cancellation.
-- [ ] Limited retention assessment.
-- [ ] Missing renewal dimension and weight redistribution.
-- [ ] Risk category boundaries.
-- [ ] Single recommendation rule.
-- [ ] Idempotent assessment refresh.
+- [x] Duplicate same-day attendance.
+- [x] Inactive-member check-in warning.
+- [x] Membership pause and expiry extension.
+- [x] Renewal preserving previous period.
+- [x] Grace-period classification.
+- [x] Future-effective cancellation.
+- [x] Limited retention assessment.
+- [x] Missing renewal dimension and weight redistribution.
+- [x] Risk category boundaries.
+- [x] Single recommendation rule.
+- [x] Idempotent assessment refresh.
 
 Acceptance criteria:
 - Critical business rules pass repeatable tests.
@@ -862,14 +862,14 @@ Acceptance criteria:
 **Owner:** Akash
 
 Tasks:
-- [ ] Verify navigation between dashboard, members and retention.
-- [ ] Verify form validation.
-- [ ] Verify loading states.
-- [ ] Verify empty states.
-- [ ] Verify error states.
-- [ ] Verify responsive layout for the demo device.
-- [ ] Remove placeholder content that could be mistaken for live data.
-- [ ] Check terminology consistency.
+- [x] Verify navigation between dashboard, members and retention.
+- [x] Verify form validation.
+- [x] Verify loading states.
+- [x] Verify empty states.
+- [x] Verify error states.
+- [x] Verify responsive layout for the demo device.
+- [x] Remove placeholder content that could be mistaken for live data.
+- [x] Check terminology consistency.
 
 Acceptance criteria:
 - The demo does not contain broken navigation, dead controls or misleading placeholders.
@@ -879,13 +879,13 @@ Acceptance criteria:
 **Owner:** Sagnik
 
 Tasks:
-- [ ] Validate the problem statement and value proposition.
-- [ ] Verify the demo story is understandable to a studio owner.
-- [ ] Ensure every displayed metric has a defensible definition.
-- [ ] Ensure synthetic or demo data is identified where appropriate.
-- [ ] Prepare concise explanations of retention scoring.
-- [ ] Prepare answers about ML validation and data privacy.
-- [ ] Rehearse the demo with the team.
+- [x] Validate the problem statement and value proposition.
+- [x] Verify the demo story is understandable to a studio owner.
+- [x] Ensure every displayed metric has a defensible definition.
+- [x] Ensure synthetic or demo data is identified where appropriate.
+- [x] Prepare concise explanations of retention scoring.
+- [x] Prepare answers about ML validation and data privacy.
+- [x] Rehearse the demo with the team.
 
 Acceptance criteria:
 - The team can explain what PranaX does, how it works and what makes its retention intelligence useful.
@@ -896,15 +896,15 @@ Acceptance criteria:
 **Owner:** Rahul
 
 Tasks:
-- [ ] Verify production/demo environment variables.
-- [ ] Verify database migrations are applied.
-- [ ] Verify deployment succeeds.
-- [ ] Verify application health.
-- [ ] Verify API/service health.
-- [ ] Confirm no secrets are committed.
-- [ ] Confirm the demo tenant has consistent data.
-- [ ] Tag or record the demo commit.
-- [ ] Keep a known-good build available.
+- [x] Verify production/demo environment variables.
+- [x] Verify database migrations are applied.
+- [x] Verify deployment succeeds.
+- [x] Verify application health.
+- [x] Verify API/service health.
+- [x] Confirm no secrets are committed.
+- [x] Confirm the demo tenant has consistent data.
+- [x] Tag or record the demo commit.
+- [x] Keep a known-good build available.
 
 Acceptance criteria:
 - The deployed demo is reachable and the end-to-end workflow works in the deployed environment.
@@ -977,17 +977,17 @@ Do not cut tenant isolation, member registration, manual attendance, determinist
 
 The Buildathon MVP is successful when:
 
-- [ ] The application runs in a deployed demo environment.
-- [ ] A studio owner or manager can register a member.
-- [ ] A membership can be assigned.
-- [ ] Attendance can be recorded.
-- [ ] The system can identify a member with declining engagement.
-- [ ] Retention risk is calculated deterministically.
-- [ ] The score is accompanied by understandable evidence.
-- [ ] One appropriate recommendation is displayed.
-- [ ] The owner dashboard reflects the operational data.
-- [ ] Tenant isolation is enforced.
-- [ ] The demo can be repeated without manual database intervention.
+- [x] The application runs in a deployed demo environment.
+- [x] A studio owner or manager can register a member.
+- [x] A membership can be assigned.
+- [x] Attendance can be recorded.
+- [x] The system can identify a member with declining engagement.
+- [x] Retention risk is calculated deterministically.
+- [x] The score is accompanied by understandable evidence.
+- [x] One appropriate recommendation is displayed.
+- [x] The owner dashboard reflects the operational data.
+- [x] Tenant isolation is enforced.
+- [x] The demo can be repeated without manual database intervention.
 
 ML and conversational capabilities can strengthen the presentation, but they are not prerequisites for Buildathon success.
 

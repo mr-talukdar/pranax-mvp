@@ -1,105 +1,158 @@
+<div align="center">
+
+<img src="apps/web/public/pranax-logo.png" alt="PranaX Logo" width="180" />
+
 # PranaX
 
-PranaX is a modern multi-tenant SaaS platform tailored for boutique fitness, Pilates, and yoga studios. It provides studio owners and operators with an integrated operational command center: member management, attendance and session tracking with CSV imports, deterministic retention intelligence with explainable factor scoring, and a guardrailed AI assistant for studio operations.
+**Next-Generation Multi-Tenant SaaS Platform for Boutique Fitness, Pilates & Yoga Studios**
+
+[![Next.js](https://img.shields.io/badge/Next.js-15.5-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19-blue?style=for-the-badge&logo=react)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.165-009688?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
+[![Python](https://img.shields.io/badge/Python-3.12+-3776AB?style=for-the-badge&logo=python)](https://www.python.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Supabase-336791?style=for-the-badge&logo=postgresql)](https://supabase.com/)
+[![Prisma](https://img.shields.io/badge/Prisma-6-2D3748?style=for-the-badge&logo=prisma)](https://www.prisma.io/)
+[![TailwindCSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com/)
+
+<p align="center">
+  <a href="#-core-capabilities">Key Features</a> •
+  <a href="#-system-architecture">Architecture</a> •
+  <a href="#-quick-start">Quick Start</a> •
+  <a href="#-synthetic-data--seeding">Synthetic Data</a> •
+  <a href="#-configuration">Configuration</a> •
+  <a href="#-documentation--adrs">ADRs</a>
+</p>
+
+</div>
 
 ---
 
-## Current Status & Capabilities
+## 🌟 Overview
 
-The platform has transitioned from initial foundation scaffolds into an end-to-end operational MVP:
+**PranaX** gives boutique fitness, Pilates, and yoga studio owners and operators a modern command center. It unifies essential operational workflows—member management, attendance tracking, and class rosters—with deterministic retention risk intelligence and a guarded, privacy-safe conversational AI studio assistant.
 
-- **Public Landing & Studio Onboarding:**
-  - Modern marketing and onboarding experience at `/`.
-  - Supabase Auth SSR integration (session cookies, email confirmation, authenticated callback).
-  - Studio workspace bootstrapping on sign-up, ensuring one initial studio per owner identity.
-  - Development and evaluation demo mode backed by published synthetic credentials (`apps/web/public/demo-credentials.json`).
-
-- **Studio Owner Dashboard (`/dashboard`):**
-  - High-level 30-second operational health metrics: active members, new registrations, and today's unique check-ins.
-  - Membership lifecycle breakdown: active, paused, expiring within 7 days, and expired counts.
-  - Continuous 14-day zero-filled attendance trend sequence aligned to the studio's local IANA timezone.
-  - Retention risk distribution (Low, Medium, High risk counts and percentages) deduplicated to the latest member assessment.
-  - Prioritized Attention Queue highlighting high-risk and medium-risk members with verified, non-hallucinated retention factors and recommendations.
-
-- **Member Management (`/members`, `/members/new`, `/members/[memberId]`):**
-  - Searchable, filterable member directory with active membership badges and retention risk indicators.
-  - Member creation with instant profile provisioning.
-  - In-depth member profile views containing membership history, attendance timelines, and explainable retention risk factor breakdowns.
-
-- **Attendance Tracking & Batch Import (`/attendance`, `/attendance/import`):**
-  - Daily check-in registration and class attendance records tied to class sessions.
-  - Resilient bulk CSV attendance importer featuring interactive column mapping, client-side format pre-validation, preview verification, and database duplicate collision prevention (`@@unique([studioId, memberId, localDate])`).
-
-- **Retention Risk Intelligence Engine (`/retention`):**
-  - Standalone deterministic calculation engine in Python/FastAPI (`services/intelligence/`).
-  - Multi-factor risk scoring evaluating attendance cadence, 30-to-60 day attendance trend velocity, absence recency, and membership tenure.
-  - Historical retention snapshot persistence (`RetentionSnapshot`) capturing point-in-time scores, risk tiers, and factor attributions.
-  - Actionable, rule-based and LLM-assisted member retention recommendations grounded strictly in empirical metrics.
-
-- **Guarded AI Studio Assistant (`/assistant`, `/api/assistant`):**
-  - Conversational analytics assistant designed specifically for studio owners ([ADR-005](docs/decisions/ADR-005-conversational-assistant.md)).
-  - Server-side intent routing restricts queries to four predefined read-only operations: attendance summary, membership summary, retention summary, and studio overview.
-  - Zero PII leakage: member names, contacts, and raw personal records are never sent to model prompts; only bounded aggregate metrics are used.
-  - Powered by Gemini API with deterministic fallback when API keys are absent or services are unreachable.
-  - Evidence-backed responses citing concrete verifiable metric IDs.
-
-- **Multi-Tenant Security & Isolation:**
-  - Strict tenant boundary enforcement via `withVerifiedStudioContext(authUserId, studioId, tx)`.
-  - Server-verified Supabase Auth identity mapped to `StudioUser` roles. Studio IDs are resolved server-side from session context and are never trusted from client payloads alone.
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│                             PranaX Platform                              │
+│                                                                          │
+│   [ Studio Onboarding ]  ───>  [ Operations & Roster ]  ───> [ Dashboard ]│
+│            │                               │                      ▲      │
+│            ▼                               ▼                      │      │
+│   [ Tenant Isolation ]         [ CSV Batch Ingestion ]            │      │
+│            │                               │                      │      │
+│            ▼                               ▼                      │      │
+│   [ Supabase Auth RLS ]        [ Deterministic Retention Engine ] ────────┘
+│                                            │                             │
+│                                            ▼                             │
+│                              [ Guarded AI Studio Assistant ] ─────────────┘
+└──────────────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
-## Monorepo Architecture
+## ✨ Core Capabilities
+
+### 📊 1. Studio Owner Command Center (`/dashboard`)
+
+- **30-Second Health Assessment:** Real-time visibility into active members, new registrations, and today's unique check-ins.
+- **Membership Lifecycle Tracking:** Granular breakdown of active, paused, expiring within 7 days, and expired memberships.
+- **Timezone-Aligned Attendance Trends:** Continuous 14-day zero-filled check-in trend chart synced with the studio's IANA timezone.
+- **Retention Risk Distribution:** Accurate categorization (Low, Medium, High risk) deduplicated to the latest assessment per eligible member.
+- **Prioritized Attention Queue:** Actionable member list with verified, non-hallucinated retention risk drivers and targeted next steps.
+
+### 👥 2. Member Management & Profiles (`/members`)
+
+- **Dynamic Member Directory:** Instant search and multi-criteria status filtering (Active, Paused, Expired, Cancelled).
+- **Complete Lifecycle History:** Member creation, profile editing, and transparent membership period tracking.
+- **360° Member View:** Comprehensive profiles showing membership status, attendance logs, and explainable retention risk factors.
+
+### 📅 3. Attendance Tracking & CSV Import (`/attendance`)
+
+- **One-Click Check-In:** Daily attendance check-ins with studio-local date deduplication (`@@unique([studioId, memberId, localDate])`).
+- **Resilient CSV Ingestion (`/attendance/import`):** Flexible batch importer featuring interactive column mapping, client-side validation, error isolation, and duplicate protection.
+
+### 🧠 4. Deterministic Retention Intelligence (`/retention`)
+
+- **Multi-Factor Risk Engine:** Independent Python calculation engine assessing visit recency, 30/60-day attendance trend velocity, cadence consistency, and tenure.
+- **Immutable Snapshot History (`RetentionSnapshot`):** Point-in-time assessment records capturing historical score shifts without mutating past evaluations ([ADR-003](docs/decisions/ADR-003-retention-snapshot-history.md)).
+- **Empirical Recommendations:** Grounded, rule-based and LLM-assisted retention interventions driven strictly by verified member metrics.
+
+### 🤖 5. Guarded AI Studio Assistant (`/assistant`)
+
+- **Strictly Scoped Query Router:** Fast server-side intent classification restricting queries to 4 read-only operations: `attendance_summary`, `membership_summary`, `retention_summary`, and `studio_overview` ([ADR-005](docs/decisions/ADR-005-conversational-assistant.md)).
+- **Zero PII Exposure:** No member names, phone numbers, emails, or raw database credentials ever enter model prompts.
+- **Evidence Grounding:** Every insight cites concrete metric identifiers, backed by Gemini with automatic deterministic fallback.
+
+### 🔒 6. Multi-Tenant Architecture & Security
+
+- **Server-Enforced Tenancy:** Verified session boundary via `withVerifiedStudioContext(authUserId, studioId, tx)`. Client-supplied tenant IDs are never trusted directly.
+- **PostgreSQL Row-Level Security:** RLS policies and session-scoped `app.studio_id` ensure strict tenant isolation.
+
+---
+
+## 🏗️ System Architecture
 
 ```
 pranax-mvp/
-├── apps/
-│   └── web/                   # Next.js 15 (App Router, React 19, Tailwind CSS), server route handlers
-├── services/
-│   └── intelligence/          # Python 3.12+ FastAPI service: retention scoring engine & AI assistant
-├── packages/
+├── 🌐 apps/
+│   └── web/                   # Next.js 15 (App Router, React 19, Tailwind CSS)
+│       ├── src/app/           # Application pages & API route handlers
+│       ├── src/components/    # Reusable UI components & dashboard widgets
+│       └── src/server/        # Auth, DB context, services, and tenant enforcement
+│
+├── ⚡ services/
+│   └── intelligence/          # Standalone Python 3.12+ FastAPI microservice
+│       ├── contracts.py       # Pydantic input/output schemas
+│       ├── conversation.py    # AI assistant routing & grounded responses
+│       ├── engine.py          # Deterministic retention scoring algorithms
+│       └── main.py            # Authenticated FastAPI route handlers
+│
+├── 📦 packages/
 │   ├── contracts/             # Shared TypeScript API contracts & Zod schemas (@pranax/contracts)
-│   ├── database/              # Prisma ORM schema, migrations, tenant context & seed loader (@pranax/database)
+│   ├── database/              # Prisma schema, migrations, tenant helpers & seed loader (@pranax/database)
 │   ├── config/                # Shared non-secret configuration constants (@pranax/config)
 │   └── utils/                 # Dependency-light shared TypeScript utilities (@pranax/utils)
-├── tools/
-│   └── synthetic-data/        # Standalone Python synthetic data generator & CLI validator
-├── datasets/                  # Generated synthetic studio datasets (v1.2.0, v1.3.0)
-└── docs/                      # Architectural decisions (ADRs), system overview, and data dictionary
+│
+├── 🛠️ tools/
+│   └── synthetic-data/        # Standalone Python synthetic data factory & CLI validator
+│
+├── 📂 datasets/               # Generated synthetic studio datasets (v1.2.0, v1.3.0)
+└── 📚 docs/                   # ADRs, system overview, and architectural documentation
 ```
 
 ---
 
-## Prerequisites
+## 🚀 Quick Start
 
-- **Node.js**: `>= 24.0.0`
-- **pnpm**: `^12.14.0`
-- **Python**: `>= 3.12`
-- **PostgreSQL**: Local PostgreSQL or Supabase instance (CLI v3+)
+### Prerequisites
+
+| Tool           | Version Requirement                         |
+| :------------- | :------------------------------------------ |
+| **Node.js**    | `>= 24.0.0`                                 |
+| **pnpm**       | `^12.14.0`                                  |
+| **Python**     | `>= 3.12`                                   |
+| **PostgreSQL** | Local PostgreSQL or Supabase CLI (`^3.2.0`) |
 
 ---
 
-## Getting Started
-
-### 1. Repository Setup
-
-Clone the repository and install TypeScript workspace dependencies:
+### Step 1: Clone & Install Dependencies
 
 ```bash
+# Clone the repository
+git clone https://github.com/your-org/pranax-mvp.git
+cd pranax-mvp
+
+# Install monorepo dependencies
 pnpm install
-```
 
-Configure your local environment:
-
-```bash
+# Initialize local environment variables
 cp .env.example .env
 ```
 
-Ensure `.env` contains valid configuration for your database and service endpoints (see [Configuration & Environment Variables](#configuration--environment-variables)).
+---
 
-### 2. Database Setup & Migrations
-
-Validate the schema and inspect migrations:
+### Step 2: Database Setup & Migrations
 
 ```bash
 # Generate Prisma Client
@@ -115,23 +168,32 @@ pnpm db:migrate:status
 pnpm supabase:start
 ```
 
-### 3. Running the Next.js Web Application
+---
 
-Start the development web server:
+### Step 3: Run the Web Application
 
 ```bash
+# Launch Next.js development server
 pnpm --filter @pranax/web dev
 ```
 
-The web application is served at [http://localhost:3000](http://localhost:3000):
+The web application will be accessible at [`http://localhost:3000`](http://localhost:3000):
 
-- Public Landing: `http://localhost:3000/`
-- Owner Dashboard: `http://localhost:3000/dashboard`
-- Studio Assistant: `http://localhost:3000/assistant`
+| Route                | View                                     |
+| :------------------- | :--------------------------------------- |
+| `/`                  | Public Landing Page & Studio Onboarding  |
+| `/dashboard`         | Studio Owner Command Center              |
+| `/members`           | Member Directory & Profile Views         |
+| `/attendance`        | Daily Check-In & Attendance History      |
+| `/attendance/import` | CSV Attendance Batch Importer            |
+| `/retention`         | Retention Risk Scoring & Attention Queue |
+| `/assistant`         | Guarded AI Studio Assistant              |
 
-### 4. Running the Intelligence Service
+---
 
-The Python intelligence service handles retention risk calculations and conversational AI operations. Set up its virtual environment independently:
+### Step 4: Run the Intelligence Service
+
+The Python intelligence service manages retention risk calculations and conversational AI operations:
 
 ```bash
 cd services/intelligence
@@ -140,107 +202,112 @@ cd services/intelligence
 python3 -m venv .venv
 source .venv/bin/activate
 
-# Install service dependencies in editable mode
-pip install -e .
+# Install dependencies in editable mode
+pip install -e '.[test]'
 
-# Run the FastAPI server
+# Start the FastAPI server
 uvicorn pranax_intelligence.main:app --reload --port 8000
 ```
 
-The intelligence service is served at [http://localhost:8000](http://localhost:8000) (health check at `GET /health`).
+- Service Health Check: `http://localhost:8000/health`
+- Service-to-service endpoints require `Authorization: Bearer <INTELLIGENCE_SERVICE_TOKEN>`.
 
 ---
 
-## Synthetic Data Generation & Seeding
+## 🧪 Synthetic Data & Seeding
 
-PranaX includes a standalone deterministic synthetic data generator. It generates rich, realistic multi-month studio activity without requiring a live database connection:
+PranaX includes a standalone deterministic synthetic data generator that creates realistic, multi-month studio activity without requiring a live database:
 
 ```bash
-# Generate synthetic dataset artifact
+# Generate deterministic synthetic dataset
 pnpm synthetic:generate
 
-# Run synthetic generator test suite
+# Run synthetic generator validation suite
 pnpm synthetic:test
-```
 
-To seed the generated dataset into your database via the transactional Prisma loader:
-
-```bash
+# Seed synthetic dataset into PostgreSQL via transactional Prisma loader
 pnpm --filter @pranax/database seed
 ```
 
-> **Note:** The Python generator produces pure JSON artifacts and never connects to PostgreSQL. Only the TypeScript seed loader writes to the database, enforcing strict validation and only populating designated synthetic studios.
+> **Note:** The Python generator produces standalone JSON artifacts and never connects to PostgreSQL. Only the TypeScript seed loader writes to the database, ensuring strict validation and isolating changes to synthetic tenant accounts.
 
 ---
 
-## Workspace Scripts & Quality Gates
+## 🛡️ Workspace Commands & Quality Gates
 
-Run quality verification across the workspace:
+Run checks across all workspaces:
 
 ```bash
-# Typecheck all TypeScript workspaces
+# Typecheck TypeScript packages
 pnpm typecheck
 
 # Lint workspace files
 pnpm lint
 
-# Execute all automated test suites
+# Run all test suites
 pnpm test
 
-# Build production artifacts
+# Build production bundles
 pnpm build
 ```
 
-Individual package tests:
+Targeted package tests:
 
 ```bash
-# Run contracts test suite
+# Shared contracts tests
 pnpm --filter @pranax/contracts test
 
-# Run database tests
+# Database layer tests
 pnpm --filter @pranax/database test
 
-# Run web app tests
+# Web application tests
 pnpm --filter @pranax/web test
+
+# Python intelligence tests
+python3 -m pytest services/intelligence/tests -q
 ```
 
 ---
 
-## Configuration & Environment Variables
+## ⚙️ Configuration
 
-| Variable                               | Description                                                                                                                                                             |
-| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`                         | Pooled connection string to PostgreSQL / Supabase                                                                                                                       |
-| `DIRECT_URL`                           | Direct connection string for Prisma migrations                                                                                                                          |
-| `NEXT_PUBLIC_SUPABASE_URL`             | Supabase API endpoint URL                                                                                                                                               |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase client publishable key                                                                                                                                         |
-| `NEXT_PUBLIC_SITE_URL`                 | Base public web application origin (e.g., `http://localhost:3000`)                                                                                                      |
-| `SUPABASE_SECRET_KEY`                  | Supabase service-role secret key (server-side only)                                                                                                                     |
-| `SUPABASE_JWT_SECRET`                  | Supabase JWT secret for token verification                                                                                                                              |
-| `INTELLIGENCE_URL`                     | Base URL for the FastAPI intelligence service (`http://localhost:8000`)                                                                                                 |
-| `INTELLIGENCE_SERVICE_TOKEN`           | Shared secret bearer token (minimum 32 characters) securing communication between Next.js and FastAPI                                                                   |
-| `GEMINI_API_KEY`                       | Optional Google Gemini API key used by the intelligence service for conversational assistant explanations (gracefully falls back to deterministic summaries if omitted) |
+Key environment variables declared in `.env.example`:
 
----
-
-## Documentation & Decisions
-
-Architectural decisions and specifications are tracked in [`docs/`](docs/):
-
-- [ADR-001: Next.js Backend & Database Architecture](docs/architecture/ADR-001-application-backend-and-database.md)
-- [ADR-002: Deterministic Retention Service Boundary](docs/decisions/ADR-002-retention-service-boundary.md)
-- [ADR-003: Public Onboarding & Studio Authentication](docs/decisions/ADR-003-public-onboarding-and-auth.md)
-- [ADR-003: Immutable Retention Snapshot History](docs/decisions/ADR-003-retention-snapshot-history.md)
-- [ADR-004: Owner Dashboard Backend Data Layer & Aggregations](docs/decisions/ADR-004-owner-dashboard-data-layer.md)
-- [ADR-005: Guarded Studio Analytics Assistant](docs/decisions/ADR-005-conversational-assistant.md)
+| Variable                               | Description                                                            | Context          |
+| :------------------------------------- | :--------------------------------------------------------------------- | :--------------- |
+| `DATABASE_URL`                         | Pooled connection string for PostgreSQL / Supabase                     | Server-side      |
+| `DIRECT_URL`                           | Direct connection string for Prisma migrations                         | Server-side      |
+| `NEXT_PUBLIC_SUPABASE_URL`             | Supabase API endpoint URL                                              | Client / Server  |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase client publishable key                                        | Client / Server  |
+| `NEXT_PUBLIC_SITE_URL`                 | Base public web application origin (`http://localhost:3000`)           | Client / Server  |
+| `SUPABASE_SECRET_KEY`                  | Supabase service-role secret key                                       | Server-side only |
+| `SUPABASE_JWT_SECRET`                  | Supabase JWT secret for token verification                             | Server-side only |
+| `INTELLIGENCE_URL`                     | Base URL for FastAPI intelligence service (`http://localhost:8000`)    | Server-side only |
+| `INTELLIGENCE_SERVICE_TOKEN`           | Shared secret bearer token (min. 32 chars) securing Next.js ↔ FastAPI | Server-side only |
+| `GEMINI_API_KEY`                       | Optional Gemini API key for conversational AI assistant                | Python runtime   |
 
 ---
 
-## Engineering & Agent Instructions
+## 📖 Architectural Decision Records (ADRs)
 
-Contributors and AI agents must follow [AGENTS.md](AGENTS.md) and scoped guidelines:
+Key architectural decisions governing PranaX:
 
-- Web Application: [apps/web/AGENTS.md](apps/web/AGENTS.md)
-- Intelligence Service: [services/intelligence/AGENTS.md](services/intelligence/AGENTS.md)
-- Shared Contracts: [packages/contracts/AGENTS.md](packages/contracts/AGENTS.md)
-- Agent Coordination: [docs/agents/agent-coordination.md](docs/agents/agent-coordination.md)
+| ADR                                                                      | Title                                | Key Decisions                                                                 |
+| :----------------------------------------------------------------------- | :----------------------------------- | :---------------------------------------------------------------------------- |
+| [ADR-001](docs/architecture/ADR-001-application-backend-and-database.md) | **Application Backend & Database**   | Next.js server boundary, Prisma Migrate authority, PostgreSQL RLS.            |
+| [ADR-002](docs/decisions/ADR-002-retention-service-boundary.md)          | **Deterministic Retention Boundary** | Standalone Python scoring engine, authenticated bearer token.                 |
+| [ADR-003](docs/decisions/ADR-003-public-onboarding-and-auth.md)          | **Public Onboarding & Auth**         | Supabase Auth SSR, public landing page, studio workspace bootstrap.           |
+| [ADR-003](docs/decisions/ADR-003-retention-snapshot-history.md)          | **Immutable Retention Snapshots**    | SHA-256 fingerprint deduplication, append-only history.                       |
+| [ADR-004](docs/decisions/ADR-004-owner-dashboard-data-layer.md)          | **Owner Dashboard Data Layer**       | Server aggregation, local timezone calendar alignment, unbroken trend series. |
+| [ADR-005](docs/decisions/ADR-005-conversational-assistant.md)            | **Guarded Studio Assistant**         | Bounded intent routing, 4 read-only operations, zero PII, evidence citation.  |
+
+---
+
+## 🧑‍💻 Contributing & Agent Guidelines
+
+Contributors and AI agents must follow [AGENTS.md](AGENTS.md) and directory-level guidelines:
+
+- [Web Application Instructions](apps/web/AGENTS.md)
+- [Intelligence Service Instructions](services/intelligence/AGENTS.md)
+- [Shared Contracts Instructions](packages/contracts/AGENTS.md)
+- [Agent Coordination Guide](docs/agents/agent-coordination.md)

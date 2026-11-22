@@ -3,13 +3,15 @@
 ## Prerequisites
 
 - pnpm 12.14.0
-- Node.js 24 or a version approved for each scaffolded package
-- Python 3.12+ for future intelligence work, unless a service baseline supersedes it
+- Node.js 24+
+- Python 3.12+ (verified on 3.12/3.14)
+- PostgreSQL or Supabase instance (local CLI or hosted)
 
 ## Repository setup
 
 ```bash
 pnpm install
+cp .env.example .env
 ```
 
 ## Workspace checks
@@ -21,16 +23,66 @@ pnpm test
 pnpm build
 ```
 
-Root checks may be conditional or no-op until the workspace applications provide scripts.
+Individual package tests:
 
-## Python service
+```bash
+pnpm --filter @pranax/contracts test
+pnpm --filter @pranax/database test
+pnpm --filter @pranax/web test
+```
 
-`services/intelligence` is not in pnpm. Manage its Python environment and dependency manifest independently from that directory. The retention API command and test command are documented in the [service README](../../services/intelligence/README.md).
+## Database operations
+
+```bash
+pnpm db:generate
+pnpm db:validate
+pnpm db:migrate:status
+pnpm db:migrate:deploy
+```
+
+To seed synthetic studio data into the database:
+
+```bash
+pnpm --filter @pranax/database seed
+```
+
+## Running the Web Application
+
+```bash
+pnpm --filter @pranax/web dev
+```
+
+Available routes:
+
+- Landing / Onboarding: `http://localhost:3000/`
+- Owner Dashboard: `http://localhost:3000/dashboard`
+- Members Management: `http://localhost:3000/members`
+- Attendance Management & CSV Import: `http://localhost:3000/attendance`
+- Retention Intelligence: `http://localhost:3000/retention`
+- Studio Assistant: `http://localhost:3000/assistant`
+
+## Python Intelligence Service
+
+`services/intelligence` is managed independently from pnpm.
+
+```bash
+cd services/intelligence
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e '.[test]'
+pytest tests -q
+uvicorn pranax_intelligence.main:app --reload --port 8000
+```
+
+Health check is unauthenticated at `GET /health`. Analytics and assistant endpoints require `Authorization: Bearer <INTELLIGENCE_SERVICE_TOKEN>`.
 
 ## Environment variables
 
-Do not commit real credentials. Required variables must be documented, declared by their owning service, and supplied through an environment-specific secret mechanism.
+Configured in `.env` (see `.env.example`):
 
-The retention service boundary uses `INTELLIGENCE_URL` and the server-only `INTELLIGENCE_SERVICE_TOKEN`. Configure the same random token of at least 32 characters in the Next.js and Python service environments. The repository `.env.example` contains a placeholder only. See [ADR-002](../decisions/ADR-002-retention-service-boundary.md) and the [intelligence service README](../../services/intelligence/README.md).
-
-Set `NEXT_PUBLIC_SITE_URL` to the canonical web origin for Supabase email-confirmation redirects. Add `<site-origin>/auth/callback` to the Supabase Auth redirect URL allowlist. Local development uses `http://localhost:3000`.
+- `DATABASE_URL` / `DIRECT_URL`: Database connection strings.
+- `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`: Supabase client credentials.
+- `SUPABASE_SECRET_KEY` / `SUPABASE_JWT_SECRET`: Server-side Supabase verification.
+- `INTELLIGENCE_URL` (`http://localhost:8000`) & `INTELLIGENCE_SERVICE_TOKEN`: Web server-to-intelligence service bearer authentication (minimum 32 characters).
+- `GEMINI_API_KEY`: Optional Gemini API key in intelligence service runtime for enhanced conversational explanations.
+- `NEXT_PUBLIC_SITE_URL`: Web origin for Supabase email-confirmation redirects (e.g. `http://localhost:3000`).
