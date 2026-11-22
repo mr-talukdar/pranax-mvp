@@ -83,6 +83,7 @@ Configured in `.env` (see `.env.example`):
 - `DATABASE_URL` / `DIRECT_URL`: Database connection strings.
 - `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`: Supabase client credentials.
 - `SUPABASE_SECRET_KEY` / `SUPABASE_JWT_SECRET`: Server-side Supabase verification.
+- `DEMO_ACCOUNT_EMAIL`: Server-side email identity for enforcing read-only demo access.
 - `INTELLIGENCE_URL` (`http://localhost:8000`) & `INTELLIGENCE_SERVICE_TOKEN`: Web server-to-intelligence service bearer authentication (minimum 32 characters).
 - `GEMINI_API_KEY`: Optional Gemini API key in intelligence service runtime for enhanced conversational explanations.
 - `NEXT_PUBLIC_SITE_URL`: Web origin for Supabase email-confirmation redirects (e.g. `http://localhost:3000`).

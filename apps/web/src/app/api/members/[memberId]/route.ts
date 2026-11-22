@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-import { getStudioContext } from '../../../../server/auth/context';
+import { getStudioContext, rejectDemoWrite } from '../../../../server/auth/context';
 import { getMemberById, updateMember } from '../../../../server/services/members';
 import { memberUpdateSchema } from '@pranax/contracts';
 import { ServiceError } from '../../../../server/services/errors';
@@ -21,7 +21,6 @@ export async function GET(
       { status: 401 },
     );
   }
-
   const { memberId } = await params;
   if (!memberId) {
     return NextResponse.json({ error: 'Member ID is required.' }, { status: 400 });
@@ -88,6 +87,8 @@ export async function PATCH(
       { status: 401 },
     );
   }
+  const readOnlyResponse = rejectDemoWrite(context);
+  if (readOnlyResponse) return readOnlyResponse;
 
   const { memberId } = await params;
   if (!memberId) {

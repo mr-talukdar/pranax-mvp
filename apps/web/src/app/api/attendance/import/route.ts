@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-import { getStudioContext } from '../../../../server/auth/context';
+import { getStudioContext, rejectDemoWrite } from '../../../../server/auth/context';
 import { importAttendanceCsv } from '../../../../server/services/attendance';
 import { attendanceImportRequestSchema } from '@pranax/contracts';
 import { ServiceError } from '../../../../server/services/errors';
@@ -16,6 +16,8 @@ export async function POST(request: Request) {
       { status: 401 },
     );
   }
+  const readOnlyResponse = rejectDemoWrite(context);
+  if (readOnlyResponse) return readOnlyResponse;
 
   const contentType = request.headers.get('content-type') || '';
   let csvContent = '';

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-import { getStudioContext } from '../../../../../../../server/auth/context';
+import { getStudioContext, rejectDemoWrite } from '../../../../../../../server/auth/context';
 import { renewMembership } from '../../../../../../../server/services/memberships';
 import { membershipRenewSchema } from '@pranax/contracts';
 import { ServiceError } from '../../../../../../../server/services/errors';
@@ -19,6 +19,9 @@ export async function POST(
       { status: 401 },
     );
   }
+
+  const readOnlyResponse = rejectDemoWrite(context);
+  if (readOnlyResponse) return readOnlyResponse;
 
   const { memberId, periodId } = await params;
   let body: unknown = {};

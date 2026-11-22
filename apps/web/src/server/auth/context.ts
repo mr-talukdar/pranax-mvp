@@ -7,7 +7,13 @@ import { createSupabaseServerClient } from './supabase';
 export type StudioContext = {
   authUserId: string;
   studioId: string;
+  readOnly?: boolean;
 };
+
+export function isDemoAccount(email: string | undefined): boolean {
+  const demoEmail = process.env.DEMO_ACCOUNT_EMAIL;
+  return Boolean(demoEmail && email?.toLowerCase() === demoEmail.toLowerCase());
+}
 
 export async function getStudioContext(
   selectedStudioId?: string,
@@ -46,5 +52,17 @@ export async function getStudioContext(
     return undefined;
   }
 
-  return { authUserId: data.user.id, studioId };
+  return {
+    authUserId: data.user.id,
+    studioId,
+    readOnly: isDemoAccount(data.user.email),
+  };
+}
+
+export function rejectDemoWrite(context: StudioContext): Response | undefined {
+  if (context.readOnly !== true) return undefined;
+  return Response.json(
+    { error: 'The demo studio is read-only. Create your own studio to make changes.' },
+    { status: 403 },
+  );
 }

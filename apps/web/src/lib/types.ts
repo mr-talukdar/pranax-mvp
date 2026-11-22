@@ -1,3 +1,5 @@
+import type { RetentionAssessmentOutput } from '@pranax/contracts';
+
 export type StudioContextInfo = {
   id: string;
   name: string;
@@ -32,6 +34,7 @@ export type MemberSummary = {
 };
 
 export type MemberDetail = MemberSummary & {
+  retentionAssessment?: RetentionAssessmentOutput | null;
   emergencyContact?: {
     name: string;
     phone: string;
@@ -76,6 +79,7 @@ export type AttentionQueueItem = {
   daysAbsent: number;
   cadenceDrop: string;
   primaryRecommendation: string;
+  recommendationExplanation?: string;
   keyFactors: string[];
 };
 

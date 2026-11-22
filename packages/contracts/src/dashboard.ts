@@ -67,6 +67,7 @@ export const attentionQueueItemSchema = z.object({
   daysAbsent: z.number().int().nonnegative(),
   cadenceDrop: z.string(),
   primaryRecommendation: z.string(),
+  recommendationExplanation: z.string().optional(),
   keyFactors: z.array(z.string()),
 });
 

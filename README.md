@@ -281,6 +281,7 @@ Key environment variables declared in `.env.example`:
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase client publishable key                                        | Client / Server  |
 | `NEXT_PUBLIC_SITE_URL`                 | Base public web application origin (`http://localhost:3000`)           | Client / Server  |
 | `SUPABASE_SECRET_KEY`                  | Supabase service-role secret key                                       | Server-side only |
+| `DEMO_ACCOUNT_EMAIL`                   | Email identity used to enforce read-only demo access                   | Server-side only |
 | `SUPABASE_JWT_SECRET`                  | Supabase JWT secret for token verification                             | Server-side only |
 | `INTELLIGENCE_URL`                     | Base URL for FastAPI intelligence service (`http://localhost:8000`)    | Server-side only |
 | `INTELLIGENCE_SERVICE_TOKEN`           | Shared secret bearer token (min. 32 chars) securing Next.js ↔ FastAPI | Server-side only |

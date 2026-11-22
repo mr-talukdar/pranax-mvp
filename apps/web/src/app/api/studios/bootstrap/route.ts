@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { createSupabaseServerClient } from '../../../../server/auth/supabase';
+import { isDemoAccount } from '../../../../server/auth/context';
 import { bootstrapStudio } from '../../../../server/services/bootstrap';
 
 const bootstrapSchema = z
@@ -15,6 +16,12 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { error: 'Authentication is required.' },
       { status: 401 },
+    );
+  }
+  if (isDemoAccount(data.user.email)) {
+    return NextResponse.json(
+      { error: 'The demo studio is read-only.' },
+      { status: 403 },
     );
   }
 

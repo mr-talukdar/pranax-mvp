@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
-import { AppShell } from '../../components/shell/AppShell';
-import { useAppSession } from '../../components/shell/AppSession';
+import { AppShell } from '../../../components/shell/AppShell';
+import { useAppSession } from '../../../components/shell/AppSession';
 
 export default function SettingsPage() {
   return (

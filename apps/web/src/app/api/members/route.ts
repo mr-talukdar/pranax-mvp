@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-import { getStudioContext } from '../../../server/auth/context';
+import { getStudioContext, rejectDemoWrite } from '../../../server/auth/context';
 import { createMember, listMembers } from '../../../server/services/members';
 import { memberCreateSchema, memberListQuerySchema } from '@pranax/contracts';
 import { ServiceError } from '../../../server/services/errors';
@@ -57,6 +57,8 @@ export async function POST(request: Request) {
       { status: 401 },
     );
   }
+  const readOnlyResponse = rejectDemoWrite(context);
+  if (readOnlyResponse) return readOnlyResponse;
 
   let body: unknown;
   try {

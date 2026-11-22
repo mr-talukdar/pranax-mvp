@@ -10,6 +10,7 @@ export type AppSession = {
     timezone: string;
     isSynthetic: boolean;
     role: 'OWNER' | 'MANAGER';
+    readOnly: boolean;
   };
 };
 

@@ -371,50 +371,87 @@ export async function getDashboardSummary(
             );
           }
 
-          let cadenceDrop =
-            daysAbsent > 14
-              ? `Absent for ${daysAbsent} days`
-              : 'Attendance declining';
-          const keyFactors: string[] = [];
-
-          if (Array.isArray(snapshot.indicators)) {
-            for (const ind of snapshot.indicators as Array<{
-              code?: string;
-              explanation?: string;
-            }>) {
-              if (
-                ind.code?.includes('attendance') ||
-                ind.code?.includes('frequency') ||
-                ind.code?.includes('cadence')
-              ) {
-                if (ind.explanation) cadenceDrop = ind.explanation;
-              }
-              if (ind.explanation && keyFactors.length < 3) {
-                keyFactors.push(ind.explanation);
-              }
-            }
-          }
-
-          if (keyFactors.length === 0) {
-            if (daysAbsent > 0) {
-              keyFactors.push(`Zero check-ins in ${daysAbsent} days`);
-            }
-            if (snapshot.score > 70) {
-              keyFactors.push(`High risk retention score: ${snapshot.score}`);
-            }
-          }
-
           const metadata = snapshot.assessmentMetadata as {
             recommendation?: { title?: string; explanation?: string };
           } | null;
-          if (metadata?.recommendation?.explanation && keyFactors.length < 3) {
-            keyFactors.push(metadata.recommendation.explanation);
+          const indicators = Array.isArray(snapshot.indicators)
+            ? (snapshot.indicators as Array<{
+                code?: string;
+                value?: string | number | boolean | null;
+              }>)
+            : [];
+          const indicatorValue = (code: string) =>
+            indicators.find((indicator) => indicator.code === code)?.value ??
+            null;
+          const numberValue = (code: string) => {
+            const value = indicatorValue(code);
+            return typeof value === 'number' ? value : null;
+          };
+          const daysSinceAttendance = numberValue('days_since_attendance');
+          const recentVisits = numberValue('recent_30_day_visits');
+          const previousVisits = numberValue('previous_30_day_visits');
+          const declinePercent = numberValue('attendance_decline_percent');
+          const cadenceDeterioration = numberValue(
+            'cadence_deterioration_percent',
+          );
+          const daysUntilExpiry = numberValue('days_until_expiry');
+          const nonRenewalRate = numberValue('non_renewal_rate_percent');
+          const confirmedRenewal = indicatorValue('confirmed_renewal');
+
+          let cadenceDrop = 'No reliable attendance baseline is available.';
+          if (declinePercent !== null && recentVisits !== null && previousVisits !== null) {
+            cadenceDrop = `${recentVisits} vs ${previousVisits} visits across consecutive 30-day periods (${declinePercent}% decline)`;
+          } else if (
+            recentVisits !== null &&
+            previousVisits === 0
+          ) {
+            cadenceDrop = `${recentVisits} visits in the recent 30 days; none in the previous 30 days`;
+          } else if (cadenceDeterioration !== null) {
+            cadenceDrop = `Personal visit interval increased ${cadenceDeterioration}%`;
+          } else if (daysSinceAttendance !== null) {
+            cadenceDrop = `Last recorded visit ${daysSinceAttendance} days ago`;
+          } else if (daysAbsent > 0) {
+            cadenceDrop = `No recorded visits for ${daysAbsent} days`;
           }
 
-          const primaryRecommendation =
+          const keyFactors: string[] = [];
+          if (daysSinceAttendance !== null) {
+            keyFactors.push(`Last visit ${daysSinceAttendance} days ago`);
+          }
+          if (recentVisits !== null) {
+            keyFactors.push(
+              previousVisits === null
+                ? `${recentVisits} visits in the last 30 days`
+                : `${recentVisits} visits in the last 30 days, versus ${previousVisits} in the prior 30 days${declinePercent === null ? '' : ` (${declinePercent}% decline)`}`,
+            );
+          }
+          if (daysUntilExpiry !== null) {
+            keyFactors.push(
+              `Membership ends in ${daysUntilExpiry} days; ${confirmedRenewal === true ? 'renewal is recorded' : 'no renewal is recorded'}`,
+            );
+          }
+          if (nonRenewalRate !== null && keyFactors.length < 3) {
+            keyFactors.push(`Historical non-renewal rate ${nonRenewalRate}%`);
+          }
+
+          let primaryRecommendation =
             snapshot.recommendation ||
             metadata?.recommendation?.title ||
             'Direct check-in with member to assess satisfaction and schedule a session';
+          let recommendationExplanation =
+            metadata?.recommendation?.explanation ?? undefined;
+          if (daysUntilExpiry !== null && daysUntilExpiry <= 7 && confirmedRenewal !== true) {
+            if (daysSinceAttendance !== null && daysSinceAttendance >= 30) {
+              primaryRecommendation = `Re-engage after ${daysSinceAttendance} days away; renewal in ${daysUntilExpiry} days`;
+              recommendationExplanation = `The member has not attended for ${daysSinceAttendance} days and the membership ends in ${daysUntilExpiry} days. Make a personal check-in about the attendance barrier before discussing renewal.`;
+            } else if (declinePercent !== null && declinePercent >= 50) {
+              primaryRecommendation = `Discuss ${declinePercent}% attendance decline before renewal`;
+              recommendationExplanation = `Attendance fell from ${previousVisits ?? 0} to ${recentVisits ?? 0} visits across consecutive 30-day periods, and the membership ends in ${daysUntilExpiry} days. Ask what changed and offer a plan that fits the member's current routine.`;
+            } else {
+              primaryRecommendation = `Renewal in ${daysUntilExpiry}d · ${recentVisits ?? '?'} visits in last 30d`;
+              recommendationExplanation = `Membership ends in ${daysUntilExpiry} days with no renewal recorded. ${recentVisits === null ? 'Attendance history is unavailable.' : `${recentVisits} visits were recorded in the last 30 days${previousVisits === null ? '.' : ` versus ${previousVisits} in the prior 30 days.`}`} Contact the member to confirm intent and use that attendance pattern to guide the renewal conversation.`;
+            }
+          }
 
           const queueCategory: 'HIGH' | 'MEDIUM' | 'LIMITED' =
             category === 'HIGH'
@@ -433,6 +470,7 @@ export async function getDashboardSummary(
             daysAbsent,
             cadenceDrop,
             primaryRecommendation,
+            recommendationExplanation,
             keyFactors,
           });
         }

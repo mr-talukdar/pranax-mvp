@@ -413,12 +413,18 @@ export async function assessMemberRetention(
   if (!evidence) return null;
 
   const now = new Date();
-  const assessmentDate = asOfDate ?? localDate(now, evidence.studio.timezone);
+  const today = localDate(now, evidence.studio.timezone);
   const coverageStart = evidence.studio.settings?.attendanceCoverageFrom;
   const coverageVerifiedAt = evidence.studio.settings?.coverageVerifiedAt;
   const verifiedThrough = coverageVerifiedAt
     ? localDate(coverageVerifiedAt, evidence.studio.timezone)
     : null;
+  // Assess only through the last date the studio has verified as complete.
+  // This allows a valid, clearly dated score without treating unverified days
+  // as zero attendance. Explicit historical requests remain unchanged.
+  const assessmentDate =
+    asOfDate ??
+    (verifiedThrough && verifiedThrough < today ? verifiedThrough : today);
   const payload: Omit<RetentionAssessmentInput, 'studio_id'> = {
     member_id: evidence.id,
     timezone: evidence.studio.timezone,

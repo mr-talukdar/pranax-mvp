@@ -3,8 +3,8 @@
 import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { AppShell } from '../../../components/shell/AppShell';
-import { createMemberApi } from '../../../lib/api';
+import { AppShell } from '../../../../components/shell/AppShell';
+import { createMemberApi } from '../../../../lib/api';
 
 export default function NewMemberPage() {
   const router = useRouter();
@@ -38,7 +38,7 @@ export default function NewMemberPage() {
         phone: phone.trim() || undefined,
       });
 
-      router.push(`/members/${created.id}`);
+      router.push(`/studio/members/${created.id}`);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : 'Failed to register member.',
@@ -53,7 +53,7 @@ export default function NewMemberPage() {
         {/* Breadcrumb & Navigation */}
         <div className="flex items-center gap-2 text-on-surface-variant font-label-md text-label-md">
           <Link
-            href="/members"
+            href="/studio/members"
             className="hover:text-on-surface transition-colors"
           >
             Members
@@ -296,7 +296,7 @@ export default function NewMemberPage() {
             </div>
             <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
               <Link
-                href="/members"
+                href="/studio/members"
                 className="px-5 py-2.5 rounded-xl border border-border-delicate bg-surface-container-lowest text-on-surface font-label-md text-label-md font-medium hover:bg-surface-container transition-colors text-center"
               >
                 Cancel

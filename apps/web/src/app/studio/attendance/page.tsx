@@ -2,9 +2,9 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
-import { AppShell } from '../../components/shell/AppShell';
-import type { AttendanceItem, MemberSummary } from '../../lib/types';
-import { fetchAttendanceRecords, fetchMembers, recordCheckInApi } from '../../lib/api';
+import { AppShell } from '../../../components/shell/AppShell';
+import type { AttendanceItem, MemberSummary } from '../../../lib/types';
+import { fetchAttendanceRecords, fetchMembers, recordCheckInApi } from '../../../lib/api';
 
 export default function AttendancePage() {
   const [viewMode, setViewMode] = useState<'live' | 'history'>('live');
@@ -103,7 +103,7 @@ export default function AttendancePage() {
 
           <div className="flex items-center gap-3">
             <Link
-              href="/attendance/import"
+              href="/studio/attendance/import"
               className="px-3.5 py-2 rounded-xl border border-border-delicate bg-surface-container-lowest hover:bg-surface-container text-on-surface font-label-md text-label-md font-medium transition-colors flex items-center gap-1.5 shadow-xs"
             >
               <span className="material-symbols-outlined text-[18px]">upload_file</span>
@@ -291,7 +291,7 @@ export default function AttendancePage() {
                       </div>
                       <div>
                         <Link
-                          href={`/members/${record.memberId}`}
+                          href={`/studio/members/${record.memberId}`}
                           className="font-semibold text-on-surface hover:text-primary transition-colors font-body-md"
                         >
                           {record.memberName}
@@ -369,7 +369,7 @@ export default function AttendancePage() {
                         })}
                       </td>
                       <td className="py-3.5 font-semibold text-on-surface">
-                        <Link href={`/members/${r.memberId}`} className="hover:text-primary">
+                        <Link href={`/studio/members/${r.memberId}`} className="hover:text-primary">
                           {r.memberName}
                         </Link>
                       </td>

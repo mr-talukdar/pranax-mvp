@@ -101,6 +101,11 @@ export function AppShell({ children, title }: AppShellProps) {
           onToggleSidebar={() => setMobileOpen(true)}
           title={title}
         />
+        {session.studio.readOnly && (
+          <div className="mx-4 mt-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900 sm:mx-6 lg:mx-8" role="status">
+            Demo studio is read-only. Create your own studio to add or change data.
+          </div>
+        )}
         <main className="px-4 sm:px-6 lg:px-8 py-6 flex-1 flex flex-col">
           {children}
         </main>

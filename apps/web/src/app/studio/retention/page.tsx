@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { AppShell } from '../../components/shell/AppShell';
-import type { DashboardKPIs } from '../../lib/types';
-import { fetchDashboardData } from '../../lib/api';
+import { AppShell } from '../../../components/shell/AppShell';
+import type { DashboardKPIs } from '../../../lib/types';
+import { fetchDashboardData } from '../../../lib/api';
 
 export default function RetentionPage() {
   const [filter, setFilter] = useState<'all' | 'high' | 'medium' | 'limited'>('all');
@@ -275,7 +275,7 @@ export default function RetentionPage() {
                             {item.memberInitials}
                           </div>
                           <Link
-                            href={`/members/${item.memberId}`}
+                            href={`/studio/members/${item.memberId}`}
                             className="min-w-0 truncate font-semibold text-on-surface transition-colors hover:text-primary"
                           >
                             {item.memberName}
@@ -297,11 +297,23 @@ export default function RetentionPage() {
                       </td>
                       <td className="py-3.5 pr-4 align-middle font-body-sm text-text-muted break-words">{item.cadenceDrop}</td>
                       <td className="max-w-sm break-words py-3.5 pr-4 align-middle font-body-sm text-on-surface">
-                        {item.primaryRecommendation}
+                        <p className="font-semibold">{item.primaryRecommendation}</p>
+                        {item.recommendationExplanation && (
+                          <p className="mt-1 text-text-muted">
+                            {item.recommendationExplanation}
+                          </p>
+                        )}
+                        {item.keyFactors.length > 0 && (
+                          <ul className="mt-2 space-y-1 text-text-muted">
+                            {item.keyFactors.map((factor) => (
+                              <li key={factor}>• {factor}</li>
+                            ))}
+                          </ul>
+                        )}
                       </td>
                       <td className="whitespace-nowrap py-3.5 pl-1 pr-1 text-right align-middle">
                         <Link
-                          href={`/members/${item.memberId}`}
+                          href={`/studio/members/${item.memberId}`}
                           aria-label={`Review ${item.memberName}'s retention profile`}
                           className="inline-flex items-center justify-center whitespace-nowrap rounded-xl bg-primary px-2.5 py-1.5 font-label-sm text-label-sm font-semibold text-on-primary shadow-xs transition-all hover:bg-primary-container"
                         >

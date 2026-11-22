@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-import { getStudioContext } from '../../../../../server/auth/context';
+import { getStudioContext, rejectDemoWrite } from '../../../../../server/auth/context';
 import {
   createMembership,
   getMembershipHistory,
@@ -22,7 +22,6 @@ export async function GET(
       { status: 401 },
     );
   }
-
   const { memberId } = await params;
   try {
     const history = await getMembershipHistory(context, memberId);
@@ -56,6 +55,8 @@ export async function POST(
       { status: 401 },
     );
   }
+  const readOnlyResponse = rejectDemoWrite(context);
+  if (readOnlyResponse) return readOnlyResponse;
 
   const { memberId } = await params;
   let body: unknown;

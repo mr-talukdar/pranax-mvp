@@ -4,6 +4,8 @@ import { z } from 'zod';
 import { setActiveStudioCookie } from '../../../../server/auth/studio-cookie';
 import { createSupabaseServerClient } from '../../../../server/auth/supabase';
 import { ensureUserStudio } from '../../../../server/services/bootstrap';
+import { getUserStudio } from '../../../../server/services/bootstrap';
+import { isDemoAccount } from '../../../../server/auth/context';
 
 const loginSchema = z
   .object({
@@ -48,10 +50,10 @@ export async function POST(request: Request) {
       );
     }
 
-    const studio = await ensureUserStudio(
-      data.user.id,
-      studioNameFromUser(data.user),
-    );
+    const studio = isDemoAccount(data.user.email)
+      ? await getUserStudio(data.user.id)
+      : await ensureUserStudio(data.user.id, studioNameFromUser(data.user));
+    if (!studio) throw new Error('The demo studio is unavailable.');
     await setActiveStudioCookie(studio.id);
     return NextResponse.json({ data: { signedIn: true } });
   } catch (error) {

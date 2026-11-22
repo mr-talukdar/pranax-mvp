@@ -130,8 +130,16 @@ export function synthesizeDynamicRecommendation(
       daysUntilExpiry <= 7 &&
       !confirmedRenewal
     ) {
-      title = `Immediate renewal required: Expires in ${daysUntilExpiry} days`;
-      explanation = `Active membership expires in ${daysUntilExpiry} days with no scheduled renewal. Reach out today to secure continuation.`;
+      const visitSummary =
+        recentVisits === null
+          ? 'attendance history is unavailable'
+          : `${recentVisits} visits in the last 30 days${previousVisits === null ? '' : ` versus ${previousVisits} in the previous 30 days`}`;
+      const absenceSummary =
+        daysSinceAttendance === null
+          ? ''
+          : ` The last recorded visit was ${daysSinceAttendance} days ago.`;
+      title = `Renewal in ${daysUntilExpiry}d · ${recentVisits ?? '?'} recent visits`;
+      explanation = `Membership expires in ${daysUntilExpiry} days with no renewal recorded; ${visitSummary}.${absenceSummary} Contact the member now and use their recent attendance to decide whether to renew the same plan or discuss a better-fitting option.`;
     } else if (declinePercent !== null && declinePercent >= 50) {
       title = `Severe attendance drop: ${declinePercent}% reduction`;
       explanation = `Visit frequency dropped sharply from ${previousVisits ?? 0} to ${recentVisits ?? 0} sessions over 30 days. Check in to identify schedule changes or satisfaction issues.`;
@@ -170,9 +178,22 @@ export function synthesizeDynamicRecommendation(
     } else if (lifecycle === 'EXPIRED' || lifecycle === 'LAPSED') {
       title = 'Lapsed member reactivation';
       explanation = 'Membership ended without active renewal. Engage with reactivation offer or feedback inquiry.';
+    } else if (
+      assessment.completeness_reasons.some((reason) =>
+        reason.toLowerCase().includes('attendance coverage'),
+      )
+    ) {
+      title = 'Verify attendance records before scoring';
+      const coverageReasons = assessment.completeness_reasons.filter((reason) =>
+        reason.toLowerCase().includes('attendance coverage'),
+      );
+      explanation = `${coverageReasons.join(' ')} Reconcile or import the missing attendance history, then verify the studio coverage range. A churn score would be unreliable until that is complete.`;
+    } else if (assessment.completeness_reasons.length > 0) {
+      title = 'Complete member history before scoring';
+      explanation = `${assessment.completeness_reasons.join(' ')} Complete the missing membership history before using a retention score or intervention recommendation.`;
     } else {
-      title = 'Evidence verification required';
-      explanation = 'Assessment is limited or excluded due to unverified attendance coverage or non-active membership status.';
+      title = 'Assessment unavailable';
+      explanation = 'The assessment does not have enough verified evidence to calculate a reliable retention score.';
     }
   }
 
@@ -194,6 +215,10 @@ export async function generateRetentionRecommendation(
   assessment: RetentionAssessmentOutput,
   options?: { apiKey?: string; timeoutMs?: number },
 ): Promise<RetentionRecommendation> {
+  if (assessment.status !== 'COMPLETE') {
+    return synthesizeDynamicRecommendation(assessment);
+  }
+
   const apiKey =
     options?.apiKey ??
     process.env.GEMINI_API_KEY?.trim() ??

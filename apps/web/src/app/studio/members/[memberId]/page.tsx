@@ -2,8 +2,8 @@
 
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
-import { AppShell } from '../../../components/shell/AppShell';
-import type { AttendanceItem, MemberDetail } from '../../../lib/types';
+import { AppShell } from '../../../../components/shell/AppShell';
+import type { AttendanceItem, MemberDetail } from '../../../../lib/types';
 import {
   fetchMemberById,
   fetchAttendanceRecords,
@@ -11,7 +11,7 @@ import {
   resumeMembershipApi,
   renewMembershipApi,
   cancelMembershipApi,
-} from '../../../lib/api';
+} from '../../../../lib/api';
 
 interface MemberPageProps {
   params: Promise<{ memberId: string }>;
@@ -32,6 +32,7 @@ export default function MemberDetailPage({ params }: MemberPageProps) {
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
   const [submittingAction, setSubmittingAction] = useState(false);
+  const retention = member?.retentionAssessment ?? null;
 
   const loadMemberData = async () => {
     setLoading(true);
@@ -79,7 +80,7 @@ export default function MemberDetailPage({ params }: MemberPageProps) {
               Retry
             </button>
             <Link
-              href="/members"
+              href="/studio/members"
               className="px-4 py-2 rounded-xl border border-border-delicate hover:bg-surface-container font-label-md"
             >
               Back to Members
@@ -168,7 +169,7 @@ export default function MemberDetailPage({ params }: MemberPageProps) {
       <div className="flex flex-col w-full max-w-7xl mx-auto gap-space-lg">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-on-surface-variant font-label-md text-label-md">
-          <Link href="/members" className="hover:text-on-surface transition-colors">
+          <Link href="/studio/members" className="hover:text-on-surface transition-colors">
             Members
           </Link>
           <span>/</span>
@@ -335,7 +336,7 @@ export default function MemberDetailPage({ params }: MemberPageProps) {
                 <span>Cancel</span>
               </button>
               <Link
-                href="/attendance"
+                href="/studio/attendance"
                 className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-on-primary font-label-md text-label-md font-semibold hover:bg-primary-container shadow-xs transition-all"
               >
                 <span className="material-symbols-outlined text-[18px]">event_available</span>
@@ -590,7 +591,7 @@ export default function MemberDetailPage({ params }: MemberPageProps) {
                 </p>
               </div>
               <Link
-                href="/attendance"
+                href="/studio/attendance"
                 className="px-3.5 py-2 rounded-xl bg-primary text-on-primary font-label-md text-label-md font-semibold hover:bg-primary-container"
               >
                 + Check In Today
@@ -654,36 +655,40 @@ export default function MemberDetailPage({ params }: MemberPageProps) {
                       Prioritization Score
                     </span>
                     <span className="px-2.5 py-0.5 rounded-full bg-sage-tint text-secondary font-label-sm text-label-sm font-semibold">
-                      v1.0.0 Deterministic
+                      {retention?.scoring_version ?? 'No assessment'}
                     </span>
                   </div>
 
                   <div className="flex items-baseline gap-3 my-2">
                     <span className="font-display text-display font-bold text-on-surface">
-                      {member.retentionScore ?? 18}
+                      {retention?.score ?? '—'}
                     </span>
                     <span className="text-on-surface-variant font-headline-sm">/ 100</span>
                     <span
                       className={`ml-2 px-3 py-1 rounded-full font-label-sm text-label-sm font-semibold ${
-                        member.retentionCategory === 'HIGH'
+                        retention?.category === 'HIGH'
                           ? 'bg-rose-tint text-rose-soft'
-                          : member.retentionCategory === 'MEDIUM'
+                          : retention?.category === 'MEDIUM'
                           ? 'bg-surface-container text-tertiary'
-                          : 'bg-sage-tint text-secondary'
+                          : retention?.category === 'LOW'
+                            ? 'bg-sage-tint text-secondary'
+                            : 'bg-surface-container text-on-surface-variant'
                       }`}
                     >
-                      {member.retentionCategory ?? 'LOW'} RISK
+                      {retention?.category ? `${retention.category} RISK` : retention?.status ?? 'NOT ASSESSED'}
                     </span>
                   </div>
 
                   <p className="font-body-md text-body-md text-on-surface-variant mt-3">
-                    Calculated deterministically using attendance cadence recency, decline trajectories, and membership lifecycle milestones.
+                    {retention?.status === 'COMPLETE'
+                      ? `Score uses verified records through ${retention.assessment_date} · ${retention.scoring_version}`
+                      : retention?.completeness_reasons.join(' ') || 'No retention assessment is available for this member yet.'}
                   </p>
                 </div>
 
                 <div className="mt-6 pt-4 border-t border-border-delicate flex items-center justify-between text-on-surface-variant font-body-sm text-body-sm">
-                  <span>Snapshot ID: #PX-SNAP-{member.id.slice(-6)}</span>
-                  <span className="text-secondary font-semibold">Immutable Record</span>
+                  <span>Assessment date: {retention?.assessment_date ?? '—'}</span>
+                  <span className="text-secondary font-semibold">{retention?.lifecycle_state ?? 'Unavailable'}</span>
                 </div>
               </div>
 
@@ -701,48 +706,29 @@ export default function MemberDetailPage({ params }: MemberPageProps) {
 
                   <div className="p-4 rounded-xl bg-surface-bright border border-border-delicate mb-4">
                     <p className="font-headline-sm font-semibold text-on-surface">
-                      {member.retentionCategory === 'HIGH'
-                        ? 'Direct WhatsApp check-in; offer 1-on-1 reformer recalibration slot'
-                        : member.retentionCategory === 'MEDIUM'
-                        ? 'Remind member of weekend session schedule and upcoming workshop'
-                        : 'No active intervention needed; sustain steady 2-3x/wk attendance cadence'}
+                      {retention?.recommendation.title ?? 'Recommendation unavailable'}
                     </p>
+                    {retention?.recommendation.explanation && <p className="font-body-sm text-body-sm text-on-surface-variant mt-2">{retention.recommendation.explanation}</p>}
                   </div>
 
                   <h3 className="font-label-md text-label-md font-semibold text-on-surface mb-2">
                     Key Contributing Indicators
                   </h3>
                   <ul className="flex flex-col gap-2 font-body-md text-body-md text-on-surface-variant">
-                    <li className="flex items-center gap-2">
-                      <span className="material-symbols-outlined text-[16px] text-secondary">
-                        check
-                      </span>
-                      <span>Attendance recency: Last checked in {member.lastVisit ?? 'within standard window'}.</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="material-symbols-outlined text-[16px] text-secondary">
-                        check
-                      </span>
-                      <span>Weekly rhythm: Operating at {member.cadence}.</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="material-symbols-outlined text-[16px] text-secondary">
-                        check
-                      </span>
-                      <span>Membership tenure: Continuous active participation since join date.</span>
-                    </li>
+                    {retention?.recommendation.evidence.length ? retention.recommendation.evidence.map((indicator) => (
+                      <li className="flex items-start gap-2" key={indicator.code}>
+                        <span className="material-symbols-outlined text-[16px] text-secondary">{indicator.available ? 'check' : 'info'}</span>
+                        <span><strong>{indicator.label}:</strong> {indicator.explanation}</span>
+                      </li>
+                    )) : <li>Assessment evidence is not available.</li>}
                   </ul>
                 </div>
 
-                <div className="mt-4 flex items-center justify-end gap-3">
-                  <button
-                    type="button"
-                    onClick={() => globalThis.alert(`Initiating outreach protocol for ${member.firstName} ${member.lastName}`)}
-                    className="px-4 py-2 rounded-xl bg-primary text-on-primary font-label-md text-label-md font-semibold hover:bg-primary-container transition-all"
-                  >
-                    Execute Recommended Outreach
-                  </button>
-                </div>
+                {retention?.recommendation.action && (
+                  <p className="mt-4 text-right font-label-md text-label-md text-on-surface-variant">
+                    Suggested action: {retention.recommendation.action}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -752,26 +738,13 @@ export default function MemberDetailPage({ params }: MemberPageProps) {
                 Retention Dimensions Breakdown
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="p-4 rounded-xl bg-surface-bright border border-border-delicate">
-                  <span className="font-label-sm text-label-sm text-text-muted">Recency Score</span>
-                  <p className="font-headline-lg font-bold text-on-surface mt-1">8 / 35</p>
-                  <p className="font-body-sm text-body-sm text-text-muted mt-1">High visit frequency</p>
-                </div>
-                <div className="p-4 rounded-xl bg-surface-bright border border-border-delicate">
-                  <span className="font-label-sm text-label-sm text-text-muted">Decline & Consistency</span>
-                  <p className="font-headline-lg font-bold text-on-surface mt-1">4 / 25</p>
-                  <p className="font-body-sm text-body-sm text-text-muted mt-1">Zero negative drift</p>
-                </div>
-                <div className="p-4 rounded-xl bg-surface-bright border border-border-delicate">
-                  <span className="font-label-sm text-label-sm text-text-muted">Lifecycle State</span>
-                  <p className="font-headline-lg font-bold text-on-surface mt-1">3 / 20</p>
-                  <p className="font-body-sm text-body-sm text-text-muted mt-1">Established veteran</p>
-                </div>
-                <div className="p-4 rounded-xl bg-surface-bright border border-border-delicate">
-                  <span className="font-label-sm text-label-sm text-text-muted">Historical Renewal</span>
-                  <p className="font-headline-lg font-bold text-on-surface mt-1">3 / 20</p>
-                  <p className="font-body-sm text-body-sm text-text-muted mt-1">Multiple successful cycles</p>
-                </div>
+                {retention ? Object.entries(retention.dimensions).map(([name, dimension]) => (
+                  <div className="p-4 rounded-xl bg-surface-bright border border-border-delicate" key={name}>
+                    <span className="font-label-sm text-label-sm text-text-muted">{name.replaceAll('_', ' ')}</span>
+                    <p className="font-headline-lg font-bold text-on-surface mt-1">{dimension.score === null ? '—' : `${dimension.score} / 100`}</p>
+                    <p className="font-body-sm text-body-sm text-text-muted mt-1">{dimension.explanation}</p>
+                  </div>
+                )) : <p className="text-on-surface-variant">Dimension scores are unavailable until an assessment is completed.</p>}
               </div>
             </div>
           </div>

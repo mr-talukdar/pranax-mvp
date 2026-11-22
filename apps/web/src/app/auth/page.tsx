@@ -94,7 +94,7 @@ export default function AuthPage() {
         );
       }
 
-      router.replace('/dashboard');
+      router.replace('/studio/dashboard');
       router.refresh();
     } catch (submitError) {
       setError(

@@ -269,6 +269,7 @@ export async function fetchMemberById(id: string): Promise<MemberDetail> {
       : 'Standard Cadence',
     retentionCategory: retentionData?.category ?? null,
     retentionScore: retentionData?.score ?? null,
+    retentionAssessment: retentionData ?? null,
     avatarBg: 'bg-primary',
     emergencyContact: undefined,
     notes: m.notes ?? undefined,

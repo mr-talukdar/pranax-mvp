@@ -17,34 +17,34 @@ export function Sidebar({ session, onSignOut, onCloseMobile }: SidebarProps) {
   const navItems = [
     {
       name: 'Overview',
-      href: '/dashboard',
+      href: '/studio/dashboard',
       icon: 'dashboard',
-      active: pathname === '/dashboard',
+      active: pathname === '/studio/dashboard',
     },
     {
       name: 'Members',
-      href: '/members',
+      href: '/studio/members',
       icon: 'group',
-      active: pathname.startsWith('/members'),
+      active: pathname.startsWith('/studio/members'),
     },
     {
       name: 'Attendance',
-      href: '/attendance',
+      href: '/studio/attendance',
       icon: 'schedule',
-      active: pathname.startsWith('/attendance'),
+      active: pathname.startsWith('/studio/attendance'),
     },
     {
       name: 'Retention',
-      href: '/retention',
+      href: '/studio/retention',
       icon: 'ecg_heart',
-      active: pathname.startsWith('/retention'),
+      active: pathname.startsWith('/studio/retention'),
     },
     {
       name: 'AI Assistant',
-      href: '/assistant',
+      href: '/studio/assistant',
       icon: 'auto_awesome',
       iconClass: 'text-tertiary',
-      active: pathname.startsWith('/assistant'),
+      active: pathname.startsWith('/studio/assistant'),
     },
   ];
 
@@ -54,7 +54,7 @@ export function Sidebar({ session, onSignOut, onCloseMobile }: SidebarProps) {
         {/* Brand header */}
         <div className="min-h-[76px] px-3 flex items-center justify-between border-b border-outline-variant/30">
           <Link
-            href="/dashboard"
+            href="/studio/dashboard"
             onClick={onCloseMobile}
             className="flex min-w-0 flex-1 items-center group"
           >
@@ -118,10 +118,10 @@ export function Sidebar({ session, onSignOut, onCloseMobile }: SidebarProps) {
       {/* Footer / Account & Studio context */}
       <div className="p-space-md border-t border-outline-variant/30 flex flex-col gap-space-sm bg-surface-container-lowest">
         <Link
-          href="/settings"
+          href="/studio/settings"
           onClick={onCloseMobile}
           className={`flex items-center gap-2.5 px-space-sm py-2 rounded-lg font-label-md text-label-md transition-all ${
-            pathname.startsWith('/settings')
+            pathname.startsWith('/studio/settings')
               ? 'bg-primary-fixed text-on-primary-fixed-variant font-bold'
               : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
           }`}

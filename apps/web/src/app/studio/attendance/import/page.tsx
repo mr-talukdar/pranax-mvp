@@ -2,8 +2,8 @@
 
 import { useState, type ChangeEvent } from 'react';
 import Link from 'next/link';
-import { AppShell } from '../../../components/shell/AppShell';
-import { importAttendanceCsvApi } from '../../../lib/api';
+import { AppShell } from '../../../../components/shell/AppShell';
+import { importAttendanceCsvApi } from '../../../../lib/api';
 
 interface PreviewRow {
   row: number;
@@ -98,7 +98,7 @@ member-3@example.com,2026-06-25T11:30:00.000Z,Sunrise Mat Pilates`;
       <div className="flex flex-col w-full max-w-4xl mx-auto gap-space-lg">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-on-surface-variant font-label-md text-label-md">
-          <Link href="/attendance" className="hover:text-on-surface transition-colors">
+          <Link href="/studio/attendance" className="hover:text-on-surface transition-colors">
             Attendance
           </Link>
           <span>/</span>
@@ -308,7 +308,7 @@ member-3@example.com,2026-06-25T11:30:00.000Z,Sunrise Mat Pilates`;
 
             <div className="flex items-center gap-3 mt-4">
               <Link
-                href="/attendance"
+                href="/studio/attendance"
                 className="px-5 py-2.5 rounded-xl bg-primary text-on-primary font-label-md text-label-md font-semibold hover:bg-primary-container shadow-xs transition-all"
               >
                 Go to Attendance Desk

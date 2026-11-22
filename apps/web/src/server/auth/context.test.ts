@@ -68,6 +68,7 @@ describe('getStudioContext server-side resolution', () => {
     expect(context).toEqual({
       authUserId: demoUserId,
       studioId: targetStudioId,
+      readOnly: false,
     });
     expect(withVerifiedStudioContextMock).toHaveBeenCalledWith(
       demoUserId,
@@ -81,6 +82,7 @@ describe('getStudioContext server-side resolution', () => {
     expect(context).toEqual({
       authUserId: demoUserId,
       studioId: targetStudioId,
+      readOnly: false,
     });
     expect(mockCookieStore.get).toHaveBeenCalledWith('pranax-studio-id');
   });
@@ -113,7 +115,7 @@ describe('getStudioContext server-side resolution', () => {
 
     const context = await getStudioContext(targetStudioId, 'Bearer stale-token');
 
-    expect(context).toEqual({ authUserId: demoUserId, studioId: targetStudioId });
+    expect(context).toEqual({ authUserId: demoUserId, studioId: targetStudioId, readOnly: false });
     expect(mockSupabase.auth.getUser).toHaveBeenNthCalledWith(1, 'stale-token');
     expect(mockSupabase.auth.getUser).toHaveBeenNthCalledWith(2);
     expect(withVerifiedStudioContextMock).toHaveBeenCalledWith(

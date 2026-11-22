@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import { AppShell } from '../../components/shell/AppShell';
-import type { MemberSummary } from '../../lib/types';
-import { fetchDashboardData, fetchMembers } from '../../lib/api';
+import { AppShell } from '../../../components/shell/AppShell';
+import type { MemberSummary } from '../../../lib/types';
+import { fetchDashboardData, fetchMembers } from '../../../lib/api';
 
 type StudioMemberCounts = {
   active: number;
@@ -155,14 +155,14 @@ export default function MembersPage() {
 
           <div className="flex items-center gap-3">
             <Link
-              href="/attendance/import"
+              href="/studio/attendance/import"
               className="px-3.5 py-2 rounded-xl border border-border-delicate bg-surface-container-lowest hover:bg-surface-container text-on-surface font-label-md text-label-md font-medium transition-colors flex items-center gap-1.5 shadow-xs"
             >
               <span className="material-symbols-outlined text-[18px]">upload_file</span>
               <span>Import CSV</span>
             </Link>
             <Link
-              href="/members/new"
+              href="/studio/members/new"
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-on-primary font-label-md text-label-md font-semibold hover:bg-primary-container shadow-xs transition-all"
             >
               <span className="material-symbols-outlined text-[18px]">person_add</span>
@@ -327,7 +327,7 @@ export default function MembersPage() {
                             </div>
                             <div className="flex flex-col min-w-0">
                               <Link
-                                href={`/members/${member.id}`}
+                                href={`/studio/members/${member.id}`}
                                 className="font-semibold text-on-surface hover:text-primary transition-colors truncate"
                               >
                                 {member.firstName} {member.lastName}
@@ -385,7 +385,7 @@ export default function MembersPage() {
                         </td>
                         <td className="py-3.5 px-4 text-right">
                           <Link
-                            href={`/members/${member.id}`}
+                            href={`/studio/members/${member.id}`}
                             aria-label={`View ${member.firstName} ${member.lastName}'s profile`}
                             className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-primary font-label-md text-label-md font-semibold transition-colors"
                           >

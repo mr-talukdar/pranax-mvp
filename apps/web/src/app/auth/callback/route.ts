@@ -41,7 +41,7 @@ export async function GET(request: Request) {
       metadataString(data.user.user_metadata, 'studio_name') || 'My Studio';
     const studio = await ensureUserStudio(data.user.id, studioName);
     await setActiveStudioCookie(studio.id);
-    return NextResponse.redirect(new URL('/dashboard', requestUrl));
+    return NextResponse.redirect(new URL('/studio/dashboard', requestUrl));
   } catch (error) {
     console.error('Email confirmation callback failed', error);
     return NextResponse.redirect(new URL('/auth?error=workspace', requestUrl));

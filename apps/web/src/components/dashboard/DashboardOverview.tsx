@@ -171,7 +171,7 @@ export function DashboardOverview({ initialData }: DashboardOverviewProps) {
             <span className="text-on-surface-variant">• Today</span>
           </div>
           <Link
-            href="/attendance"
+            href="/studio/attendance"
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-surface-container-lowest text-on-surface font-label-md text-label-md font-semibold hover:bg-surface-container-high transition-colors shadow-xs border border-border-delicate"
           >
             <span className="material-symbols-outlined text-[18px] text-primary">
@@ -180,7 +180,7 @@ export function DashboardOverview({ initialData }: DashboardOverviewProps) {
             <span>Record Attendance</span>
           </Link>
           <Link
-            href="/members/new"
+            href="/studio/members/new"
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-on-primary font-label-md text-label-md font-semibold hover:bg-primary-container shadow-xs transition-all"
           >
             <span className="material-symbols-outlined text-[18px]">
@@ -228,7 +228,7 @@ export function DashboardOverview({ initialData }: DashboardOverviewProps) {
           </p>
           <div className="flex flex-wrap items-center justify-center gap-space-sm">
             <Link
-              href="/members/new"
+              href="/studio/members/new"
               className="flex items-center gap-1.5 px-space-md py-2.5 rounded-lg bg-primary text-on-primary font-label-md text-label-md font-semibold hover:bg-primary-container shadow-xs transition-all"
             >
               <span className="material-symbols-outlined text-[18px]">
@@ -237,7 +237,7 @@ export function DashboardOverview({ initialData }: DashboardOverviewProps) {
               <span>Add Your First Member</span>
             </Link>
             <Link
-              href="/attendance"
+              href="/studio/attendance"
               className="px-space-md py-2.5 rounded-lg bg-surface-container text-on-surface font-label-md text-label-md font-semibold hover:bg-surface-container-high transition-colors"
             >
               Open Attendance
@@ -253,7 +253,7 @@ export function DashboardOverview({ initialData }: DashboardOverviewProps) {
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-space-md">
             {/* 1. Active Members */}
             <Link
-              href="/members"
+              href="/studio/members"
               className="bg-surface-container-lowest p-space-lg rounded-xl border border-border-delicate shadow-xs hover:shadow-md transition-all group flex flex-col justify-between"
             >
               <div className="flex items-center justify-between mb-3">
@@ -283,7 +283,7 @@ export function DashboardOverview({ initialData }: DashboardOverviewProps) {
 
             {/* 2. New Registrations */}
             <Link
-              href="/members?filter=new"
+              href="/studio/members?filter=new"
               className="bg-surface-container-lowest p-space-lg rounded-xl border border-border-delicate shadow-xs hover:shadow-md transition-all group flex flex-col justify-between"
             >
               <div className="flex items-center justify-between mb-3">
@@ -313,7 +313,7 @@ export function DashboardOverview({ initialData }: DashboardOverviewProps) {
 
             {/* 3. Attendance Today */}
             <Link
-              href="/attendance"
+              href="/studio/attendance"
               className="bg-surface-container-lowest p-space-lg rounded-xl border border-border-delicate shadow-xs hover:shadow-md transition-all group flex flex-col justify-between"
             >
               <div className="flex items-center justify-between mb-3">
@@ -343,7 +343,7 @@ export function DashboardOverview({ initialData }: DashboardOverviewProps) {
 
             {/* 4. High-Risk Members */}
             <Link
-              href="/retention"
+              href="/studio/retention"
               className="bg-surface-container-lowest p-space-lg rounded-xl border border-border-delicate shadow-xs hover:shadow-md transition-all group flex flex-col justify-between"
             >
               <div className="flex items-center justify-between mb-3">
@@ -373,7 +373,7 @@ export function DashboardOverview({ initialData }: DashboardOverviewProps) {
 
             {/* 5. Expiring in 7 Days */}
             <Link
-              href="/members?filter=expiring"
+              href="/studio/members?filter=expiring"
               className="bg-surface-container-lowest p-space-lg rounded-xl border border-border-delicate shadow-xs hover:shadow-md transition-all group flex flex-col justify-between"
             >
               <div className="flex items-center justify-between mb-3">
@@ -530,7 +530,7 @@ export function DashboardOverview({ initialData }: DashboardOverviewProps) {
 
               <div className="pt-space-lg mt-space-md">
                 <Link
-                  href="/members"
+                  href="/studio/members"
                   className="inline-flex items-center gap-1 font-label-md text-label-md font-semibold text-primary hover:text-primary-container transition-colors"
                 >
                   <span>View All Memberships</span>
@@ -750,7 +750,7 @@ export function DashboardOverview({ initialData }: DashboardOverviewProps) {
                     </p>
                   </div>
                   <Link
-                    href="/retention"
+                    href="/studio/retention"
                     className="font-label-md text-label-md font-semibold text-primary hover:text-primary-container inline-flex items-center gap-1 self-start md:self-auto"
                   >
                     <span>View Full Retention Overview</span>
@@ -884,7 +884,7 @@ export function DashboardOverview({ initialData }: DashboardOverviewProps) {
                     </p>
                   </div>
                   <Link
-                    href="/retention"
+                    href="/studio/retention"
                     className="font-label-md text-label-md font-semibold text-primary hover:text-primary-container inline-flex items-center gap-1 self-start sm:self-auto"
                   >
                     <span>Open Retention Triage</span>
@@ -922,7 +922,7 @@ export function DashboardOverview({ initialData }: DashboardOverviewProps) {
                                 {item.memberInitials}
                               </div>
                               <Link
-                                href={`/members/${item.memberId}`}
+                                href={`/studio/members/${item.memberId}`}
                                 className="font-semibold text-on-surface hover:text-primary transition-colors"
                               >
                                 {item.memberName}
@@ -952,7 +952,7 @@ export function DashboardOverview({ initialData }: DashboardOverviewProps) {
                           </td>
                           <td className="w-24 whitespace-nowrap py-3.5 text-right">
                             <Link
-                              href={`/members/${item.memberId}`}
+                              href={`/studio/members/${item.memberId}`}
                               aria-label={`Review ${item.memberName}'s profile`}
                               className="inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-lg bg-surface-container-low px-2.5 py-2 text-primary font-label-sm text-label-sm font-semibold transition-colors hover:bg-surface-container"
                             >

@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 
 import { setActiveStudioCookie } from '../../../../server/auth/studio-cookie';
 import { createSupabaseServerClient } from '../../../../server/auth/supabase';
-import { ensureUserStudio } from '../../../../server/services/bootstrap';
+import { ensureUserStudio, getUserStudio } from '../../../../server/services/bootstrap';
+import { isDemoAccount } from '../../../../server/auth/context';
 
 function stringMetadata(
   metadata: Record<string, unknown> | undefined,
@@ -26,7 +27,15 @@ export async function GET() {
     const fullName = stringMetadata(data.user.user_metadata, 'full_name');
     const studioName =
       stringMetadata(data.user.user_metadata, 'studio_name') || 'My Studio';
-    const studio = await ensureUserStudio(data.user.id, studioName);
+    const studio = isDemoAccount(data.user.email)
+      ? await getUserStudio(data.user.id)
+      : await ensureUserStudio(data.user.id, studioName);
+    if (!studio) {
+      return NextResponse.json(
+        { error: 'The demo studio is unavailable.' },
+        { status: 404 },
+      );
+    }
     await setActiveStudioCookie(studio.id);
 
     const response = NextResponse.json({
@@ -36,7 +45,7 @@ export async function GET() {
           email: data.user.email ?? '',
           name: fullName || data.user.email?.split('@')[0] || 'Studio owner',
         },
-        studio,
+        studio: { ...studio, readOnly: isDemoAccount(data.user.email) },
       },
     });
     response.headers.set('Cache-Control', 'private, no-store');
